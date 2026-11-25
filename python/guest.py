@@ -23,8 +23,10 @@ class Guest:
         self.lifted = 0
         self._loops = {}
 
-    def run(self, budget, path_budget=1000000):
+    def run(self, budget, path_budget=1000000, *, dispatch_budget=None):
         if type(budget) is not int or budget < 0: raise ValueError('invalid guest budget')
+        if dispatch_budget is not None and (type(dispatch_budget) is not int or dispatch_budget < 0): raise ValueError('invalid dispatch budget')
+        start_dispatches = self.dispatches
         steps = 0
         def reg(i):
             if type(i) is not int or not 0 <= i < 8: raise ValueError('invalid register')
@@ -48,6 +50,8 @@ class Guest:
                     if self.r[c]==0: self.pc=exit_pc
                     steps+=ticks; self.lifted+=ticks; self.work+=w; path_budget-=w
                     continue
+            if dispatch_budget is not None and self.dispatches-start_dispatches >= dispatch_budget:
+                break
             op,*a = self.program[self.pc]; pc = self.pc+1
             if op == 'set': d,v=a; self.r[reg(d)]=imm(v)
             elif op in ('mov','add','mul','xor','and'):

@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MAGIC = b'#!/usr/bin/env vlk\n'
-USAGE = 'usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk guest PROGRAM [OPTIONS] | vlk PROGRAM [COUNT]'
+USAGE = 'usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk guest PROGRAM [OPTIONS] | vlk debug PROGRAM [--restore FILE] | vlk PROGRAM [COUNT]'
 
 
 def replace(argv):
@@ -68,6 +68,8 @@ def main(args):
             print(USAGE, file=sys.stderr)
             return 2
         return replace(tail)
+    if cmd == 'debug':
+        return replace([sys.executable, str(ROOT / 'python/debugger.py'), *tail])
     if cmd == 'guest':
         return replace([sys.executable, str(ROOT / 'python/guest.py'), *tail])
     if cmd == 'shell':

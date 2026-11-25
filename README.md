@@ -107,3 +107,7 @@ The guest ISA includes eight u32 registers, ordinary branches, byte memory acces
 ## Weighted guest paths
 
 `vlk guest examples/guest-weighted.json --budget 32212254729 | od -An -tu1` executes an unannotated unequal-branch guest program. The optimizer preserves logical instruction coordinates, including interruption inside a branch. See [weighted temporal Grounds and receipts](docs/WEIGHTED_PATH.md).
+
+## Interactable pure guest debugger
+
+`vlk debug examples/guest-debug.json` accepts status, observe T, step N, save PATH and quit. Resume with `vlk debug PROGRAM --restore PATH`. The pure session can inspect exact logical coordinates without changing committed state and can reconstruct a verified checkpoint from the original program. See [debugger contract](docs/DEBUGGER.md). General effectful guest execution remains available via vlk guest.
