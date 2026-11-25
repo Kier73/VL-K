@@ -4,6 +4,7 @@ import json
 import sys
 from memory import AddressSpace
 from path import path_run, MASK
+from lift import recognize, navigate
 
 
 class Guest:
@@ -18,6 +19,9 @@ class Guest:
         self.input = input_stream
         self.output = output_stream
         self.work = 0
+        self.dispatches = 0
+        self.lifted = 0
+        self._loops = {}
 
     def run(self, budget, path_budget=1000000):
         if type(budget) is not int or budget < 0: raise ValueError('invalid guest budget')
@@ -33,11 +37,22 @@ class Guest:
             return i
         while not self.halted and steps < budget:
             if not 0 <= self.pc < len(self.program): raise ValueError('instruction fetch fault')
+            if self.mode != 'reference' and self.program[self.pc] and self.program[self.pc][0]=='mov':
+                if self.pc not in self._loops:
+                    self._loops[self.pc] = recognize(self.program,self.pc)
+                plan=self._loops[self.pc]
+                jump=navigate(plan,self.r,budget-steps,path_budget) if plan else None
+                if jump:
+                    n,s,x,c,p,y,w=jump
+                    self.r[s],self.r[x],self.r[c]=p,y,(self.r[c]-n)&MASK
+                    if self.r[c]==0: self.pc+=11
+                    steps+=8*n; self.lifted+=8*n; self.work+=w; path_budget-=w
+                    continue
             op,*a = self.program[self.pc]; pc = self.pc+1
             if op == 'set': d,v=a; self.r[reg(d)]=imm(v)
-            elif op in ('mov','add','mul','xor'):
+            elif op in ('mov','add','mul','xor','and'):
                 d,s=map(reg,a); x,y=self.r[d],self.r[s]
-                self.r[d]=({'mov':lambda:y,'add':lambda:x+y,'mul':lambda:x*y,'xor':lambda:x^y}[op]()) & MASK
+                self.r[d]=({'mov':lambda:y,'add':lambda:x+y,'mul':lambda:x*y,'xor':lambda:x^y,'and':lambda:x&y}[op]()) & MASK
             elif op == 'load8': d,s=map(reg,a); self.r[d]=self.memory.read(self.r[s],1)[0]
             elif op == 'store8': d,s=map(reg,a); self.memory.write(self.r[d],bytes([self.r[s]&255]))
             elif op == 'jmp': pc=target(a[0])
@@ -54,7 +69,7 @@ class Guest:
                 self.r[d],self.r[p]=x,q; self.work+=w; path_budget-=w
             elif op == 'halt': self.status=self.r[reg(a[0])]&255; self.halted=True
             else: raise ValueError('unknown instruction')
-            self.pc=pc;steps+=1
+            self.pc=pc;steps+=1;self.dispatches+=1
         return steps
 
 

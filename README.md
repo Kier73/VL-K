@@ -98,3 +98,8 @@ printf 'Hello, VL-K' | vlk guest examples/guest-echo.json
 ```
 
 The guest ISA includes eight u32 registers, ordinary branches, byte memory access, binary streams and exit status. Repeated pure conditional blocks can use automatic exact finite-selector navigation. See [guest and layered path contract](docs/LAYERED_PATH.md). Native host commands still use their existing execution path. This is not a Linux-compatible guest loader yet.
+
+
+## Automatic optimization of ordinary guest instructions
+
+`vlk guest examples/guest-conditional.json --budget 1600009` runs a conditional countdown program without explicit Ground instructions. Eligible pure loops are discovered and navigated behind the same interface, preserving logical instruction budgets. See [automatic lifting](docs/AUTOMATIC_LIFT.md); `python3 benchmarks/guest_lift.py` compares the two execution modes using the actual CLI and process supervisor.

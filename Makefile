@@ -26,5 +26,6 @@ test: all
 	python3 tests/memory_stress.py
 	python3 tests/guest_memory.py
 	python3 tests/path_guest.py
+	python3 tests/lift.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk
