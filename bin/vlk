@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""VL-K hosted command interface; ordinary commands retain host semantics."""
+import json
+import os
+import signal
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+MAGIC = b'#!/usr/bin/env vlk\n'
+USAGE = 'usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk PROGRAM [COUNT]'
+
+
+def replace(argv):
+    try:
+        for name in ('SIGPIPE', 'SIGXFZ', 'SIGXFSZ'):
+            if hasattr(signal, name):
+                signal.signal(getattr(signal, name), signal.SIG_DFL)
+        os.execvp(argv[0], argv)
+    except FileNotFoundError:
+        print(f'vlk: {argv[0]}: not found', file=sys.stderr)
+        return 127
+    except OSError as exc:
+        print(f'vlk: {argv[0]}: {exc.strerror}', file=sys.stderr)
+        return 126
+
+
+def portable(path, args):
+    if args in (['-h'], ['--help']):
+        print(f'usage: {path} [COUNT]')
+        return 0
+    if len(args) > 1:
+        raise ValueError('expected at most one repetition count')
+    with open(path, 'rb') as f:
+        raw = f.read(65537)
+    if len(raw) > 65536 or not raw.startswith(MAGIC):
+        raise ValueError('expected a VL-K executable (version 1)')
+    spec = json.loads(raw[len(MAGIC):])
+    if not isinstance(spec, dict) or set(spec) != {'version','seed','program','steps','output'} or type(spec['version']) is not int or spec['version'] != 1:
+        raise ValueError('invalid executable schema')
+    output = spec['output']
+    if not isinstance(output, list) or not output or any(type(r) is not int or not 0 <= r < 4 for r in output):
+        raise ValueError('invalid output registers')
+    if args and (not args[0].isascii() or not args[0].isdecimal() or len(args[0]) > 20):
+        raise ValueError('expected unsigned decimal repetition count')
+    steps = int(args[0]) if args else spec['steps']
+    sys.path.insert(0, str(ROOT / 'python'))
+    from vlk import Kernel
+    result = Kernel().evaluate(spec['seed'], spec['program'], steps,
+                               budget=int(os.environ.get('VLK_BUDGET', '1000000')),
+                               mode=os.environ.get('VLK_MODE', 'auto'))
+    if result['status'] != 0:
+        print(f"vlk: execution failed ({result['status']})", file=sys.stderr)
+        return 1
+    print(' '.join(str(result['registers'][r]) for r in output))
+    return 0
+
+
+def main(args):
+    if not args or args == ['--help'] or args == ['-h']:
+        print(USAGE, file=sys.stderr if not args else sys.stdout)
+        return 2 if not args else 0
+    cmd, *tail = args
+    if cmd == 'run':
+        if tail and tail[0] == '--':
+            tail = tail[1:]
+        if not tail:
+            print(USAGE, file=sys.stderr)
+            return 2
+        return replace(tail)
+    if cmd == 'shell':
+        return replace(['/bin/sh', *tail])
+    try:
+        return portable(cmd, tail)
+    except (OSError, ValueError, TypeError, KeyError, OverflowError) as exc:
+        print(f'vlk: {exc}', file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,2 @@
+#!/usr/bin/env vlk
+{"version":1,"seed":[0,1,0,0],"program":[["addr",0,1],["addr",1,0]],"steps":10,"output":[0,1]}

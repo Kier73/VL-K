@@ -1,5 +1,18 @@
 # VL-K — Virtual Layer Kernel
 
+Run programs through an ordinary command interface. The backend can choose exact alternative execution methods when available; application output is independent of that choice.
+
+```sh
+make test
+export PATH="$PWD/bin:$PATH"
+vlk shell
+vlk run python3 -c 'print("hello")'
+./examples/fib.vlk 1000000000000
+./examples/fib.vlk 10 | cut -d ' ' -f 1
+```
+
+The hosted command layer uses the underlying POSIX system for conventional programs and shell facilities. Portable VL-K executables use the kernel's exact instruction evaluator. A standalone guest OS, ELF loader and autonomous device layer are development targets. See [execution contract](docs/EXECUTION.md).
+
 A freestanding computational nucleus for portable, navigable execution. K0 provides process lifecycle and exact scalar Grounds; K1 extracts affine Grounds directly from register instructions. The same C11 source builds to a Linux shared library and import-free WebAssembly.
 
 ## Use
