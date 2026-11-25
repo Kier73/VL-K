@@ -30,5 +30,6 @@ test: all
 	python3 tests/weighted_lift.py
 	python3 tests/debugger.py
 	python3 tests/observation.py
+	python3 tests/authority.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk

@@ -115,3 +115,7 @@ The guest ISA includes eight u32 registers, ordinary branches, byte memory acces
 ## Transportable pure observations
 
 `python3 tests/observation.py` exercises a receiver-owned program catalogue, a real mutually authenticated loopback TCP exchange and fresh-process continuation from a verified checkpoint (requires OpenSSL). See [observation contract](docs/OBSERVATION.md). E-CPU handler adapter is provided for subsequent integration testing.
+
+## Persistent pure-process authority
+
+`python3 tests/authority.py` exercises SQLite-backed epoch fencing, competing VL-K-launched processes, hard-kill recovery and a native SQL publication consumer. See [authority contract](docs/AUTHORITY.md).
