@@ -70,3 +70,18 @@ with Supervisor() as s:
     assert output == b"HELLO"
     assert [s.wait(p) for p in stages] == [0, 0]
 ```
+
+## Byte-addressed memory
+
+```python
+from memory import AddressSpace
+space = AddressSpace()
+space.map(0x1000, 1 << 40, pattern=b"abcde")
+space.write(0x1000, b"hello")
+assert space.read(0x1000, 5) == b"hello"
+child = space.fork()
+child.write(0x1000, b"world")
+assert space.read(0x1000, 5) == b"hello"
+```
+
+Resident, zero-filled and periodic backing share the same read/write interface. Private mappings fork by sharing immutable pages and copying the overlay index; shared mappings retain common storage. See [memory contract](docs/MEMORY.md). These are software address spaces, not hardware page tables.
