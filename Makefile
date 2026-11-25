@@ -13,7 +13,7 @@ dist/libvlk.so: src/vlk.c src/vlk1.c src/vlk.h | dist
 	$(CC) $(CFLAGS) -shared -fPIC src/vlk.c src/vlk1.c -o $@
 dist/vlk: src/launch.c | dist
 	$(CC) $(CFLAGS) src/launch.c -o $@
-test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32
+test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32 dist/descriptor.rv32
 	python3 tests/native.py
 	node tests/wasm.mjs
 	node tests/k1.mjs
@@ -39,8 +39,9 @@ test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32
 	python3 tests/elf.py
 	python3 tests/fs.py
 	python3 tests/runtime.py
+	python3 tests/descriptors.py
 clean:
-	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf
+	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf dist/descriptor.rv32
 
 RVFLAGS := --target=riscv32-none-elf -march=rv32im -mabi=ilp32 -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -msmall-data-limit=0 -O2 -nostdlib -fuse-ld=lld -Wl,--no-relax,-T,examples/rv32/app.ld
 BOOTFLAGS := --target=i386-none-elf -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -mno-sse -mno-mmx -O2 -Wall -Wextra -Werror
@@ -65,3 +66,6 @@ dist/file.rv32: examples/rv32/file.c examples/rv32/start.S examples/rv32/app.ld 
 
 dist/runtime.rv32: examples/rv32/runtime.c examples/rv32/runtime_start.S examples/rv32/runtime.ld | dist
 	$(CLANG) $(subst examples/rv32/app.ld,examples/rv32/runtime.ld,$(RVFLAGS)) examples/rv32/runtime_start.S examples/rv32/runtime.c -o $@
+
+dist/descriptor.rv32: examples/rv32/descriptor.c examples/rv32/start.S examples/rv32/app.ld | dist
+	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/descriptor.c -o $@

@@ -21,5 +21,5 @@ typedef struct {
 typedef int32_t (*rv_io)(void *, int, uint32_t, uint8_t *, uint32_t);
 int rv_load(RV *, uint8_t *, const uint8_t *, size_t, int, const char *const *);
 int rv_load_env(RV *, uint8_t *, const uint8_t *, size_t, int, const char *const *, int, const char *const *);
-int rv_run(RV *, uint32_t, rv_io, void *, RVFS *);
+int rv_run(RV *, uint32_t, rv_io, void *, RVFS *, RVFds *);
 #endif

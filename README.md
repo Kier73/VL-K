@@ -151,3 +151,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Application runtime and external boot module
 
 `make boot dist/runtime.rv32` builds the freestanding image and separate runtime ABI probe. `vlk elf --env MODE=vlk dist/runtime.rv32 kernel` exercises startup and anonymous memory operations. `make boot-test` additionally attempts to launch the separate ELF supplied as a Multiboot module. See [runtime and module contract](docs/RUNTIME_STARTUP.md).
+
+## Process-local descriptor references
+
+Shared file objects and open descriptions are distinct from process-local descriptor tables. `python3 tests/descriptors.py` qualifies duplication, metadata and interleaved guest contexts. See [descriptor contract](docs/DESCRIPTORS.md).
