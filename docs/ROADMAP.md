@@ -1,4 +1,6 @@
-# Development
+# Development — original research roadmap
+
+The original K-series outline below is retained for historical context. Current K3.x production priorities and acceptance gates are in [Production roadmap](PRODUCTION_ROADMAP.md).
 
 K0 — scalar process lifecycle, exact navigation, reconstruction. K1 — instruction-to-Ground compiler, cost selection, native/WASM and JSON adapter.
 
