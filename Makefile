@@ -21,5 +21,6 @@ test: all
 	node tests/adapter.mjs
 	python3 tests/commands.py
 	python3 tests/processes.py
+	python3 tests/pipelines.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk

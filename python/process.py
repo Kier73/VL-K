@@ -1,4 +1,5 @@
 """Hosted process table. A single owner controls direct children, not arbitrary PIDs."""
+import os
 import subprocess
 from dataclasses import dataclass
 
@@ -36,6 +37,47 @@ class Supervisor:
         self._next += 1
         self._children[h] = p
         return h
+
+    def pipeline(self, commands, *, stdin=None, stdout=None, stderr=None, cwd=None, env=None):
+        """Connect commands with owned OS pipes; return ordered child handles."""
+        if self._closed:
+            raise RuntimeError('supervisor closed')
+        if not isinstance(commands, (list, tuple)) or not commands:
+            raise ValueError('expected nonempty command sequence')
+        if len(commands) > self.capacity - len(self._children):
+            raise RuntimeError('process table full')
+        if stdin == PIPE or stderr == PIPE:
+            raise ValueError('pipeline stdin/stderr require inherited streams or files')
+        handles, owned = [], set()
+        previous = stdin
+        try:
+            for i, argv in enumerate(commands):
+                last = i == len(commands)-1
+                if last:
+                    output, next_input = stdout, None
+                else:
+                    next_input, output = os.pipe()
+                    owned.update((next_input, output))
+                h = self.spawn(argv, stdin=previous, stdout=output, stderr=stderr,
+                               cwd=cwd, env=env)
+                handles.append(h)
+                if isinstance(previous, int) and previous in owned:
+                    os.close(previous)
+                    owned.remove(previous)
+                if isinstance(output, int) and output in owned:
+                    os.close(output)
+                    owned.remove(output)
+                previous = next_input
+            return tuple(handles)
+        except BaseException:
+            for fd in owned:
+                os.close(fd)
+            for h in handles:
+                self.kill(h)
+            for h in handles:
+                self.wait(h)
+                self.release(h)
+            raise
 
     def _get(self, handle):
         if type(handle) is not int or handle not in self._children:

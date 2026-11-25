@@ -60,3 +60,13 @@ with Supervisor() as s:
 ```
 
 Add the repository's python directory to the import path. The same API accepts portable executables (put dist on PATH) and ordinary programs. Run `python3 examples/selfbuild.py` to build and validate VL-K under its own hosted process supervisor. See [process contract](docs/PROCESS.md).
+
+Managed pipelines use the same executables and OS streams:
+
+```python
+with Supervisor() as s:
+    stages = s.pipeline([["printf", "hello"], ["tr", "a-z", "A-Z"]], stdout=PIPE)
+    output, _ = s.communicate(stages[-1])
+    assert output == b"HELLO"
+    assert [s.wait(p) for p in stages] == [0, 0]
+```
