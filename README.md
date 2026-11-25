@@ -85,3 +85,7 @@ assert space.read(0x1000, 5) == b"hello"
 ```
 
 Resident, zero-filled and periodic backing share the same read/write interface. Private mappings fork by sharing immutable pages and copying the overlay index; shared mappings retain common storage. See [memory contract](docs/MEMORY.md). These are software address spaces, not hardware page tables.
+
+## Stress and measurement
+
+`make test` includes randomized state-machine tests against an eager byte oracle, Linux mmap differential checks, SQLite database reconstruction and a test-only guest checksum workload verified by zlib. `python3 benchmarks/memory_reads.py` reports local read timings and verifies the same digest for each backend. Compact memory is not assumed to outperform conventional memory on dense accesses.

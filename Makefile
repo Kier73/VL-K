@@ -23,5 +23,7 @@ test: all
 	python3 tests/processes.py
 	python3 tests/pipelines.py
 	python3 tests/memory.py
+	python3 tests/memory_stress.py
+	python3 tests/guest_memory.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk

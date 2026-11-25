@@ -12,14 +12,19 @@ def span(start, size, limit=LIMIT):
     return start + size
 
 
+def byte_payload(value):
+    """Only buffer-protocol inputs; never interpret an integer as a length."""
+    return memoryview(value).tobytes()
+
+
 class Memory:
     def __init__(self, size, *, data=None, pattern=None):
         span(0, size)
         if data is not None and pattern is not None:
             raise ValueError('choose one backing')
         self._size = size
-        self._data = None if data is None else bytes(data)
-        self._pattern = b'\0' if pattern is None else bytes(pattern)
+        self._data = None if data is None else byte_payload(data)
+        self._pattern = b'\0' if pattern is None else byte_payload(pattern)
         if self._data is not None and len(self._data) != size:
             raise ValueError('resident backing length mismatch')
         if not self._pattern:
@@ -42,6 +47,13 @@ class Memory:
 
     def read(self, start, size):
         end = span(start, size, self.size)
+        if not self._pages:
+            return self._base(start, size)
+        if size and start // PAGE == (end-1) // PAGE:
+            page, offset = divmod(start, PAGE)
+            if page in self._pages:
+                return self._pages[page][offset:offset+size]
+            return self._base(start, size)
         out = bytearray()
         while start < end:
             page, offset = divmod(start, PAGE)
@@ -54,7 +66,7 @@ class Memory:
         return bytes(out)
 
     def write(self, start, data):
-        data = bytes(data)
+        data = byte_payload(data)
         end = span(start, len(data), self.size)
         pos = 0
         while start < end:
@@ -114,10 +126,12 @@ class AddressSpace:
         self._maps[start] = m
 
     def unmap(self, start):
+        span(start, 0)
         del self._maps[start]
         self._starts.remove(start)
 
     def protect(self, start, *, writable):
+        span(start, 0)
         if type(writable) is not bool:
             raise ValueError('expected boolean protection')
         m = self._maps[start]
@@ -144,7 +158,7 @@ class AddressSpace:
         return b''.join(m.read(offset, n) for m, offset, n in self._segments(start, size))
 
     def write(self, start, data):
-        data = bytes(data)
+        data = byte_payload(data)
         segments = self._segments(start, len(data), write=True)
         pos = 0
         for m, offset, n in segments:
@@ -160,4 +174,5 @@ class AddressSpace:
         return other
 
     def stats(self, start):
+        span(start, 0)
         return self._maps[start].memory.stats()
