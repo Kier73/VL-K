@@ -20,5 +20,6 @@ test: all
 	python3 tests/k1_native.py
 	node tests/adapter.mjs
 	python3 tests/commands.py
+	python3 tests/processes.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk

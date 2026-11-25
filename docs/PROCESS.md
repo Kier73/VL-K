@@ -1,0 +1,11 @@
+# Hosted process contract — K2.0
+
+One serialized owner manages direct host children. spawn returns a monotonically assigned, instance-local handle, not an operating-system PID. status exposes the PID and return code (None while running, negative signal number on POSIX termination). wait accepts a timeout and does not terminate the child on expiration. communicate drains binary stdout/stderr while supplying stdin; use it rather than wait for a process with undrained pipes. Captured output is buffered in host memory: use ordinary files or inherited streams for unbounded output. terminate/kill operate only on known children. release requires completion and closes retained stream handles. Context exit kills, waits and releases all remaining direct children.
+
+The process table counts both running and completed but retained entries toward capacity; a failed launch does not allocate a handle. Handles are not reusable within an instance. The owner must serialize API calls and must not independently reap its children. This is not a security boundary, distributed authority, process-tree cancellation, standalone scheduler or persistent process table. Child descendants are managed by the underlying OS, not by this API. Python 3.10+ for the supervisor.
+
+Use the same argv, working directory, environment, streams and exit semantics for native and VL-K executables. Optimization remains inside the portable executable's backend. Ordinary host commands are not rewritten. Explicit execution mode/budget remain diagnostic controls, not required application syntax.
+
+Local validation 2026-11-25: seven suites executed through examples/selfbuild.py, including prior 6000 randomized kernel cases, adapter and command equivalence, and concurrent ordinary and optimized children, a 1 MiB binary echo, capacity, timeout, signal, stale handles, failed launch and child reaping. This was a local source-tree run; independent GitHub CI is tracked separately.
+
+Next: descriptor ownership and pipeline composition with failure rollback, bounded stream capture, process groups and terminal semantics, followed by kernel-managed guest process state and scheduler. Benchmark against host alternatives before claiming performance improvement.

@@ -47,3 +47,16 @@ const result = kernel.evaluate({seed:[0,1,0,0],program:[['addr',0,1],['addr',1,0
 ```
 
 In Node use readFile instead of fetch for a local binary. Coordinates may be exact BigInts, safe integers or canonical decimal strings. Each adapter has an independent WASM instance. The Node adapter tests also exercise invalid input and budget failure. Browser deployment requires serving the built WASM; no live browser test has been conducted.
+
+## Managed processes
+
+```python
+from process import Supervisor, PIPE
+with Supervisor() as s:
+    p = s.spawn(["python3", "-c", "print(42)"], stdout=PIPE)
+    output, _ = s.communicate(p)
+    assert s.wait(p) == 0
+    s.release(p)
+```
+
+Add the repository's python directory to the import path. The same API accepts portable executables (put dist on PATH) and ordinary programs. Run `python3 examples/selfbuild.py` to build and validate VL-K under its own hosted process supervisor. See [process contract](docs/PROCESS.md).
