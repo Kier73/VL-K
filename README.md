@@ -24,3 +24,13 @@ The K1 evaluator supports 4 unsigned 32-bit registers, 64 instructions per repea
 - [Validation](docs/VALIDATION.md)
 
 Original implementation informed by the architectural separation in [unkernel](https://github.com/pithings/unkernel), examined at tree 96e4bd7ebb54b93ad5ec68feab4eda94b3073927. No upstream code copied; no license selected yet for VL-K. Third-party reuse rights need to be established explicitly.
+
+## Browser / Node adapter
+
+```js
+import {createKernel} from './js/vlk.mjs';
+const kernel = await createKernel(await (await fetch('./dist/vlk.wasm')).arrayBuffer());
+const result = kernel.evaluate({seed:[0,1,0,0],program:[['addr',0,1],['addr',1,0]],steps:'1000000000000'});
+```
+
+In Node use readFile instead of fetch for a local binary. Coordinates may be exact BigInts, safe integers or canonical decimal strings. Each adapter has an independent WASM instance. The Node adapter tests also exercise invalid input and budget failure. Browser deployment requires serving the built WASM; no live browser test has been conducted.

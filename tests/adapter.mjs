@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {createKernel} from '../js/vlk.mjs';
+const bytes=await readFile(new URL('../dist/vlk.wasm',import.meta.url));
+const k=await createKernel(bytes), other=await createKernel(bytes);
+const request={seed:[0,1,0,0],program:[['addr',0,1],['addr',1,0]],steps:'1000000000000'};
+const expected={status:0,registers:[1115770309,906757858,0,0],method:'ground',work:5210};
+assert.deepEqual(k.evaluate(request),expected);
+assert.deepEqual(other.evaluate({...request,steps:1000000000000n}),expected);
+assert.deepEqual(k.evaluate({...request,budget:5209}),{status:-4,registers:null,method:null,work:0});
+assert.throws(()=>k.evaluate({...request,steps:9007199254740992}),RangeError);
+assert.throws(()=>k.evaluate({...request,program:[['toString',0,0]]}),TypeError);
+assert.throws(()=>k.evaluate({...request,seed:[-1,0,0,0]}),RangeError);
+assert.deepEqual(k.evaluate(request),expected);
+console.log('JS adapter: exact coordinates, independent instances, typed errors, budget and repeatability');

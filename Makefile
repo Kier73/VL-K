@@ -16,5 +16,6 @@ test: all
 	node tests/wasm.mjs
 	node tests/k1.mjs
 	python3 tests/k1_native.py
+	node tests/adapter.mjs
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so
