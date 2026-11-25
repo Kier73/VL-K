@@ -43,10 +43,10 @@ class Guest:
                 plan=self._loops[self.pc]
                 jump=navigate(plan,self.r,budget-steps,path_budget) if plan else None
                 if jump:
-                    n,s,x,c,p,y,w=jump
+                    n,s,x,c,p,y,w,ticks,exit_pc=jump
                     self.r[s],self.r[x],self.r[c]=p,y,(self.r[c]-n)&MASK
-                    if self.r[c]==0: self.pc+=11
-                    steps+=8*n; self.lifted+=8*n; self.work+=w; path_budget-=w
+                    if self.r[c]==0: self.pc=exit_pc
+                    steps+=ticks; self.lifted+=ticks; self.work+=w; path_budget-=w
                     continue
             op,*a = self.program[self.pc]; pc = self.pc+1
             if op == 'set': d,v=a; self.r[reg(d)]=imm(v)

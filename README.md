@@ -103,3 +103,7 @@ The guest ISA includes eight u32 registers, ordinary branches, byte memory acces
 ## Automatic optimization of ordinary guest instructions
 
 `vlk guest examples/guest-conditional.json --budget 1600009` runs a conditional countdown program without explicit Ground instructions. Eligible pure loops are discovered and navigated behind the same interface, preserving logical instruction budgets. See [automatic lifting](docs/AUTOMATIC_LIFT.md); `python3 benchmarks/guest_lift.py` compares the two execution modes using the actual CLI and process supervisor.
+
+## Weighted guest paths
+
+`vlk guest examples/guest-weighted.json --budget 32212254729 | od -An -tu1` executes an unannotated unequal-branch guest program. The optimizer preserves logical instruction coordinates, including interruption inside a branch. See [weighted temporal Grounds and receipts](docs/WEIGHTED_PATH.md).
