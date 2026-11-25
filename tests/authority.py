@@ -57,7 +57,6 @@ def main():
         assert collect(h)==(0,b'2\n')
         print('native SQL consumer via VL-K verified publication count')
 
-
 if __name__=='__main__':
     if len(sys.argv)>1:worker()
     else:main()
