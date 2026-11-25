@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const module = await WebAssembly.compile(await readFile(new URL('../dist/vlk.wasm',import.meta.url)));
+assert.deepEqual(WebAssembly.Module.imports(module),[]);
+const k=(await WebAssembly.instantiate(module)).exports;
+assert.equal(k.vk_abi(),1);
+const U=x=>x>>>0;
+let rng=123456789;
+const rand=()=>{rng^=rng<<13;rng^=rng>>>17;rng^=rng<<5;return U(rng);};
+for(const kind of [1,2]) for(let i=0;i<500;i++) {
+  const seed=rand(), a=rand(), b=rand(), t=rand()%300;
+  let x=seed;
+  for(let j=0;j<t;j++) x=U(Math.imul(a,kind===1?x:Math.imul(x,x))+b);
+  const p=k.vk_spawn(kind,seed,a,b);assert.ok(p>0);
+  assert.equal(k.vk_observe(p,BigInt(t),300),0);assert.equal(U(k.vk_value()),x);
+  assert.equal(k.vk_time(p),0n);
+  assert.equal(k.vk_advance(p,0n,BigInt(t),300),0);assert.equal(U(k.vk_value()),x);
+  assert.equal(k.vk_observe(p,0n,300),0);assert.equal(U(k.vk_value()),seed);
+  assert.equal(k.vk_exit(p),0);
+}
+console.log('wasm: 1000 seeded differential trajectories, zero host imports');
+const t=1000000000000n, p=k.vk_spawn(1,7,1,3);
+assert.equal(k.vk_advance(p,0n,t,128),0);
+const v=U(k.vk_value()), w=k.vk_work();
+assert.equal(v,Number((7n+3n*t)&0xffffffffn));
+assert.equal(k.vk_advance(p,0n,t+1n,128),-3);
+assert.equal(k.vk_advance(p,t,t+1n,0),-4);
+assert.equal(k.vk_time(p),t);
+const f=k.vk_fork(p);assert.ok(f>0);
+assert.equal(k.vk_advance(f,t,t+1n,1),0);assert.equal(k.vk_time(p),t);
+const other=(await WebAssembly.instantiate(module)).exports;
+assert.equal(other.vk_time(p),-1n);
+const q=other.vk_restore(1,7,1,3,t,128);assert.ok(q>0);
+assert.equal(other.vk_time(q),t);assert.equal(U(other.vk_value()),v);
+assert.equal(other.vk_advance(q,t,t+1n,1),0);assert.equal(U(other.vk_value()),U(v+3));
+assert.equal(k.vk_time(p),t);
+console.log('wasm: trillion transitions,',w,'map operations, independent instance reconstruction');
