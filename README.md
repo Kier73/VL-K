@@ -119,3 +119,7 @@ The guest ISA includes eight u32 registers, ordinary branches, byte memory acces
 ## Persistent pure-process authority
 
 `python3 tests/authority.py` exercises SQLite-backed epoch fencing, competing VL-K-launched processes, hard-kill recovery and a native SQL publication consumer. See [authority contract](docs/AUTHORITY.md).
+
+## Reciprocal E-CPU bootstrap
+
+See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utility passed cross-implementation tests through VL-K. The reciprocal workflow is an additional integration target for the full E-CPU runtime and reliable-channel observation adapter.

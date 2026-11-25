@@ -11,3 +11,5 @@ make all and tests/authority.py passed. Twelve concurrent VL-K-launched processe
 Self-build launched by dist/vlk run python3 examples/selfbuild.py passed the first 13 suites and was interrupted during weighted_lift by the local execution environment. This is not a complete fresh regression pass. E-CPU git checkout blocked by DNS. No remote authority deployment claimed.
 
 Next: explicit effect outbox/consumer with idempotency, authenticated E-CPU transport and shared authority service rather than shared database files across hosts. Conventional guest execution, syscall and memory support remain parallel objectives.
+
+Follow-up: the four remaining suites (weighted lift, debugger, observation and authority) passed when launched individually through dist/vlk run. All 17 suites passed across the split runs. See BOOTSTRAP.md for the pinned E-CPU utility experiment and integration target.
