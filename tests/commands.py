@@ -6,9 +6,9 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VLK = str(ROOT / 'bin/vlk')
+VLK = str(ROOT / 'dist/vlk')
 FIB = str(ROOT / 'examples/fib.vlk')
-ENV = dict(os.environ, PATH=str(ROOT / 'bin')+os.pathsep+os.environ['PATH'])
+ENV = dict(os.environ, PATH=str(ROOT / 'dist')+os.pathsep+os.environ['PATH'])
 ENV.pop('VLK_MODE', None)
 ENV.pop('VLK_BUDGET', None)
 

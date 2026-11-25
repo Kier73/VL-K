@@ -9,7 +9,7 @@ VL-K exposes conventional commands first. Ground admission, optimization and acc
 - An executable beginning with the line "#!/usr/bin/env vlk" can contain a version-1 portable program: JSON fields version, seed, program, steps, output. It runs through the exact register evaluator. One optional unsigned decimal argument overrides steps. Output is selected unsigned registers separated by spaces, followed by newline. Successful exit 0; budget failure 1; malformed executable or arguments 2. The application does not print backend metadata.
 - VLK_MODE=reference/ground/auto and VLK_BUDGET are research diagnostics, not application-level dependencies. Default automatic selection. Forced reference and Ground are observationally equivalent within their available budgets for admitted pure programs.
 
-Native Linux is the current command target. The launcher uses Python for bootstrap simplicity, so adds startup overhead and is not a complete POSIX compatibility guarantee (for example, it restores the signals Python ignores to defaults). It does not optimize opaque native binaries. Portable programs presently implement repeated register blocks, not arbitrary instruction sets. No remote authority, privilege isolation, standalone guest kernel or browser shell is claimed.
+Native Linux is the current command target. The default dist/vlk launcher is native C and uses direct execvp/execv for ordinary commands without starting Python. Portable executables delegate to bin/vlk relative to the source tree using Linux /proc/self/exe. The Python fallback launcher remains available and restores signals Python ignores to defaults. The launcher adds startup overhead and is not a complete POSIX compatibility guarantee. It does not optimize opaque native binaries. Portable programs presently implement repeated register blocks, not arbitrary instruction sets. No remote authority, privilege isolation, standalone guest kernel or browser shell is claimed.
 
 ## Acceptance plan
 
@@ -21,3 +21,5 @@ Native Linux is the current command target. The launcher uses Python for bootstr
 6. Boot independently: device interfaces, memory protection and process isolation; hosted and standalone backends should implement the same user-facing contracts.
 
 Local tests on 2026-11-25: existing native/WASM differential suites, JavaScript adapter, and tests/commands.py passed. Command tests compare binary streams, argv, environment, cwd, shell pipes, filesystem writes, signal exit and direct vs delegated executable output; validate error and budget paths. Trillion-step portable executable returns 1115770309 906757858. Remote CI is independent.
+
+K1.2: the compiled launcher passed the same command conformance suite locally. No startup speedup benchmark has been measured.
