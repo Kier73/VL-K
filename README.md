@@ -155,3 +155,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Process-local descriptor references
 
 Shared file objects and open descriptions are distinct from process-local descriptor tables. `python3 tests/descriptors.py` qualifies duplication, metadata and interleaved guest contexts. See [descriptor contract](docs/DESCRIPTORS.md).
+
+## Structural file memory
+
+All guest file objects now use exact zero, periodic or dense page backing. `vlk elf --compact-volume FILE ELF [ARG...]` preserves compact representations in VLKFS2; the existing `--volume` selects the compatible dense VLKFS1 output format. Both accept either version as input. See [structural files](docs/STRUCTURAL_FILES.md) and `python3 tests/structural_files.py`.
