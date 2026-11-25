@@ -35,5 +35,6 @@ test: all
 	python3 tests/quotient.py
 	python3 tests/weighted_ground.py
 	python3 tests/effect_image.py
+	python3 tests/refine.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk

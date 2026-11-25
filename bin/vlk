@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MAGIC = b'#!/usr/bin/env vlk\n'
-USAGE = 'usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk guest PROGRAM [OPTIONS] | vlk debug PROGRAM [--restore FILE] | vlk app PROGRAM INPUT AUTHORITY SINK JOB | vlk pack PROGRAM IMAGE | vlk ground TABLE | vlk PROGRAM [COUNT]'
+USAGE = 'usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk guest PROGRAM [OPTIONS] | vlk debug PROGRAM [--restore FILE] | vlk app PROGRAM INPUT AUTHORITY SINK JOB | vlk pack PROGRAM IMAGE | vlk refine TABLE | vlk ground TABLE | vlk PROGRAM [COUNT]'
 
 
 def replace(argv):
@@ -70,6 +70,8 @@ def main(args):
         return replace(tail)
     if cmd == 'pack':
         return replace([sys.executable, str(ROOT / 'python/guest_image.py'), *tail])
+    if cmd == 'refine':
+        return replace([sys.executable, str(ROOT / 'python/refine.py'), *tail])
     if cmd == 'ground':
         return replace([sys.executable, str(ROOT / 'python/quotient.py'), *tail])
     if cmd == 'app':

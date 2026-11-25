@@ -1,5 +1,6 @@
 """Recognize pure bit-selected affine countdown loops, including unequal paths."""
 from path import MASK, path_run
+from refine import SparseClock
 
 
 def recognize(program, start):
@@ -67,6 +68,16 @@ def navigate(plan, registers, remaining, path_budget):
     original_m=m
     if maps[0]==maps[1] and lengths[0]==lengths[1]:
         m=1
+    # Equal translations with a different zero-residue duration need no selector scan.
+    if m>1 and maps[0]==maps[1] and maps[0][0]==1 and lengths[0]!=lengths[1]:
+        setup=len(left)+len(right)+1
+        if upper<=32 or path_budget<=setup:return None
+        clock=SparseClock(m,maps[0][1],lengths[1],((0,lengths[0]),))
+        try:
+            y,n,ticks,p,w=clock.observe(registers[x],min(remaining,2**64-1),maximum,budget=path_budget-setup)
+        except RuntimeError:return None
+        if n<=32:return None
+        return n,s,x,c,p,y,w+setup,ticks,exit_pc
     if upper<=4*m+2*upper.bit_length()+4 or path_budget < m+len(left)+len(right)+1:
         return None
     cases=[maps[0]]+[maps[1]]*(m-1)

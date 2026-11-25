@@ -131,3 +131,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Weighted Grounds and portable application images
 
 `vlk pack PROGRAM IMAGE` creates a versioned portable guest image; `vlk app IMAGE INPUT AUTHORITY SINK JOB` runs it through the same bounded application contract. Committed output can be delivered to an explicitly pinned sink over mutually authenticated TLS, with retry after receiver death. `python3 tests/weighted_ground.py` exercises weighted selector reduction, including a counterexample where state-only equivalence is insufficient. See [weighted Ground and effect contract](docs/WEIGHTED_BOOTSTRAP.md).
+
+## Constructive temporal refinement
+
+`vlk refine TABLE` admits a sparse duration Ground when a weighted residue table describes a global translation and sparse temporal exceptions; otherwise retains an exact weighted quotient. The service accepts newline JSON `{ "x": 0, "ticks": "1000000", "maximum": "1000000" }`. Ordinary guest loops with equal translations and a single exceptional branch duration can use the sparse clock automatically. See [constructive refinement](docs/REFINEMENT.md).
