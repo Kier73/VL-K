@@ -147,3 +147,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Production priorities
 
 [Production roadmap](docs/PRODUCTION_ROADMAP.md): conventional application ABI, independently verified boot and external executable loading, isolated processes and interactive terminals, real upstream research workloads, then reciprocal E-CPU execution and measured adaptive optimization.
+
+## Application runtime and external boot module
+
+`make boot dist/runtime.rv32` builds the freestanding image and separate runtime ABI probe. `vlk elf --env MODE=vlk dist/runtime.rv32 kernel` exercises startup and anonymous memory operations. `make boot-test` additionally attempts to launch the separate ELF supplied as a Multiboot module. See [runtime and module contract](docs/RUNTIME_STARTUP.md).

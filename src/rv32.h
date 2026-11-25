@@ -9,6 +9,7 @@
 #define RV_R 1u
 #define RV_W 2u
 #define RV_X 4u
+#define RV_MAP 8u /* anonymous mapping, including PROT_NONE */
 /* Guest addresses are offsets into caller-owned storage. No native guest pointers. */
 typedef struct {
     uint32_t r[32], pc, heap, brk;
@@ -19,5 +20,6 @@ typedef struct {
 } RV;
 typedef int32_t (*rv_io)(void *, int, uint32_t, uint8_t *, uint32_t);
 int rv_load(RV *, uint8_t *, const uint8_t *, size_t, int, const char *const *);
+int rv_load_env(RV *, uint8_t *, const uint8_t *, size_t, int, const char *const *, int, const char *const *);
 int rv_run(RV *, uint32_t, rv_io, void *, RVFS *);
 #endif

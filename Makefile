@@ -13,7 +13,7 @@ dist/libvlk.so: src/vlk.c src/vlk1.c src/vlk.h | dist
 	$(CC) $(CFLAGS) -shared -fPIC src/vlk.c src/vlk1.c -o $@
 dist/vlk: src/launch.c | dist
 	$(CC) $(CFLAGS) src/launch.c -o $@
-test: all boot dist/filter.rv32 dist/abi.rv32
+test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32
 	python3 tests/native.py
 	node tests/wasm.mjs
 	node tests/k1.mjs
@@ -38,8 +38,9 @@ test: all boot dist/filter.rv32 dist/abi.rv32
 	python3 tests/refine.py
 	python3 tests/elf.py
 	python3 tests/fs.py
+	python3 tests/runtime.py
 clean:
-	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/vlk-boot.elf
+	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf
 
 RVFLAGS := --target=riscv32-none-elf -march=rv32im -mabi=ilp32 -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -msmall-data-limit=0 -O2 -nostdlib -fuse-ld=lld -Wl,--no-relax,-T,examples/rv32/app.ld
 BOOTFLAGS := --target=i386-none-elf -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -mno-sse -mno-mmx -O2 -Wall -Wextra -Werror
@@ -49,15 +50,18 @@ dist/vlk-elf: src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h src/elf_run.c | dist
 	$(CC) $(CFLAGS) src/rv32.c src/rvfs.c src/elf_run.c -o $@
 dist/demo.rv32: examples/rv32/demo.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/demo.c -o $@
-dist/vlk-boot.elf: boot/start.S boot/kernel.c boot/embed.S boot/link.ld src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h dist/demo.rv32 dist/file.rv32 | dist
+dist/vlk-boot.elf: boot/start.S boot/kernel.c boot/embed.S boot/link.ld boot/module.h src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h dist/demo.rv32 dist/file.rv32 | dist
 	$(CLANG) $(BOOTFLAGS) -Isrc -nostdlib -static -fuse-ld=lld -Wl,-no-pie,-T,boot/link.ld boot/start.S boot/kernel.c boot/embed.S src/rv32.c src/rvfs.c -o $@
 dist/filter.rv32: examples/rv32/filter.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/filter.c -o $@
 dist/abi.rv32: examples/rv32/abi.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/abi.S -o $@
 .PHONY: boot-test
-boot-test: boot
+boot-test: boot dist/runtime.rv32
 	python3 tests/boot_qemu.py
 
 dist/file.rv32: examples/rv32/file.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/file.c -o $@
+
+dist/runtime.rv32: examples/rv32/runtime.c examples/rv32/runtime_start.S examples/rv32/runtime.ld | dist
+	$(CLANG) $(subst examples/rv32/app.ld,examples/rv32/runtime.ld,$(RVFLAGS)) examples/rv32/runtime_start.S examples/rv32/runtime.c -o $@

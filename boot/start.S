@@ -1,13 +1,14 @@
 .section .multiboot,"a"
 .align 4
-.long 0x1badb002, 0, -(0x1badb002)
+.long 0x1badb002, 2, -(0x1badb002+2)
 .section .text
 .global _start
 _start:
     cli
     cld
     mov $stack_top, %esp
-    sub $12, %esp
+    sub $8, %esp
+    push %ebx
     push %eax
     call kmain
 1:  hlt
