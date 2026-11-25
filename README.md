@@ -111,3 +111,7 @@ The guest ISA includes eight u32 registers, ordinary branches, byte memory acces
 ## Interactable pure guest debugger
 
 `vlk debug examples/guest-debug.json` accepts status, observe T, step N, save PATH and quit. Resume with `vlk debug PROGRAM --restore PATH`. The pure session can inspect exact logical coordinates without changing committed state and can reconstruct a verified checkpoint from the original program. See [debugger contract](docs/DEBUGGER.md). General effectful guest execution remains available via vlk guest.
+
+## Transportable pure observations
+
+`python3 tests/observation.py` exercises a receiver-owned program catalogue, a real mutually authenticated loopback TCP exchange and fresh-process continuation from a verified checkpoint (requires OpenSSL). See [observation contract](docs/OBSERVATION.md). E-CPU handler adapter is provided for subsequent integration testing.
