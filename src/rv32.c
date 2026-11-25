@@ -1,0 +1,59 @@
+#include "rv32.h"
+static uint32_t get(const uint8_t *p,unsigned n){uint32_t v=0;for(unsigned i=0;i<n;i++)v|=(uint32_t)p[i]<<(8*i);return v;}
+static void put(uint8_t *p,unsigned n,uint32_t v){for(unsigned i=0;i<n;i++)p[i]=(uint8_t)(v>>(8*i));}
+static uint32_t sx(uint32_t v,unsigned n){uint32_t bit=1u<<(n-1);return (v^bit)-bit;}
+static int span(uint32_t a,uint32_t n){return a<=RV_SIZE && n<=RV_SIZE-a;}
+static int access(RV *v,uint32_t a,uint32_t n,unsigned flags){if(!span(a,n))return 0;if(!n)return 1;for(uint32_t p=a/RV_PAGE;p<=(a+n-1)/RV_PAGE;p++)if((v->pages[p]&flags)!=flags)return 0;return 1;}
+static void zero(uint8_t *p,size_t n){for(size_t i=0;i<n;i++)p[i]=0;}
+int rv_load(RV *v,uint8_t *mem,const uint8_t *f,size_t len,int argc,const char *const *argv){
+    if(len<52||get(f,4)!=0x464c457f||f[4]!=1||f[5]!=1||f[6]!=1||get(f+16,2)!=2||get(f+18,2)!=243||get(f+20,4)!=1||get(f+36,4)!=0||get(f+40,2)!=52||get(f+42,2)!=32||argc<0||argc>64)return -1;
+    uint32_t off=get(f+28,4),pn=get(f+44,2),end=RV_PAGE;
+    if(off>len||pn>(len-off)/32||!pn)return -1;
+    zero((uint8_t*)v,sizeof(*v));zero(mem,RV_SIZE);v->mem=mem;
+    for(uint32_t i=0;i<pn;i++){
+        const uint8_t *p=f+off+32*i;uint32_t type=get(p,4);if(type==2||type==3||type==7)return -1;if(type!=1)continue;
+        uint32_t o=get(p+4,4),a=get(p+8,4),fs=get(p+16,4),ms=get(p+20,4),fl=get(p+24,4),align=get(p+28,4);
+        if(o>len||fs>len-o||fs>ms||a<RV_PAGE||a>RV_STACK||ms>RV_STACK-a||!fl||fl>7||((fl&3)==3)|| (align>1&&((align&(align-1))||((a^o)&(align-1)))))return -1;
+        if(!ms)continue;
+        unsigned perm=((fl&4)?RV_R:0)|((fl&2)?RV_W:0)|((fl&1)?RV_X:0);
+        for(uint32_t j=a/RV_PAGE;j<=(a+ms-1)/RV_PAGE;j++){if(v->pages[j])return -1;v->pages[j]=(uint8_t)perm;}
+        for(uint32_t j=0;j<fs;j++)mem[a+j]=f[o+j];
+        if(a+ms>end)end=a+ms;
+    }
+    v->pc=get(f+24,4);if((v->pc&3)||!access(v,v->pc,4,RV_X))return -1;
+    v->heap=v->brk=(end+RV_PAGE-1)&~(RV_PAGE-1);
+    for(uint32_t j=RV_STACK/RV_PAGE;j<RV_SIZE/RV_PAGE;j++)v->pages[j]=RV_R|RV_W;
+    uint32_t sp=RV_SIZE,ptrs[64];
+    for(int i=argc-1;i>=0;i--){const char *s=argv[i];size_t n=0;while(n<4096&&s[n])n++;if(n==4096||n+1>sp-RV_STACK)return -1;sp-=(uint32_t)n+1;for(size_t j=0;j<=n;j++)mem[sp+j]=(uint8_t)s[j];ptrs[i]=sp;}
+    uint32_t bytes=4u*((uint32_t)argc+5u);if(bytes>sp-RV_STACK)return -1;sp=(sp-bytes)&~15u;if(sp<RV_STACK)return -1;
+    put(mem+sp,4,(uint32_t)argc);for(int i=0;i<argc;i++)put(mem+sp+4*(i+1),4,ptrs[i]);v->r[2]=sp;return 0;
+}
+static uint32_t sra(uint32_t a,unsigned b){return b?(a>>b)|((a&0x80000000u)?(~0u<<(32-b)):0):a;}
+static int slt(uint32_t a,uint32_t b){return (a^0x80000000u)<(b^0x80000000u);}
+static int32_t syscall(RV *v,rv_io io,void *ctx){uint32_t n=v->r[17],a=v->r[10],b=v->r[11],c=v->r[12];
+    if(n==93||n==94){v->halted=1;v->status=a&255;return 0;}
+    if(n==63||n==64){if((n==63&&a!=0)||(n==64&&a!=1&&a!=2))return -9;if(!access(v,b,c,n==63?RV_W:RV_R))return -14;return io?io(ctx,n==64,a,v->mem+b,c):-38;}
+    if(n==214){if(a>=v->heap&&a<=RV_STACK){uint32_t old=(v->brk+RV_PAGE-1)/RV_PAGE,now=(a+RV_PAGE-1)/RV_PAGE;for(uint32_t p=old;p<now;p++){zero(v->mem+p*RV_PAGE,RV_PAGE);v->pages[p]=RV_R|RV_W;}for(uint32_t p=now;p<old;p++)v->pages[p]=0;v->brk=a;}return (int32_t)v->brk;}
+    return -38;
+}
+int rv_run(RV *v,uint32_t budget,rv_io io,void *ctx){
+    while(!v->halted&&budget--){uint32_t pc=v->pc;if((pc&3)||!access(v,pc,4,RV_X))return -2;
+        uint32_t i=get(v->mem+pc,4),op=i&127,d=(i>>7)&31,f=(i>>12)&7,s=(i>>15)&31,t=(i>>20)&31,h=i>>25,a=v->r[s],b=v->r[t],z=0,next=pc+4,imm=sx(i>>20,12);int wr=1;
+        switch(op){
+        case 0x37:z=i&0xfffff000u;break;case 0x17:z=pc+(i&0xfffff000u);break;
+        case 0x6f:z=next;next=pc+sx(((i>>31)<<20)|(((i>>12)&255)<<12)|(((i>>20)&1)<<11)|(((i>>21)&1023)<<1),21);break;
+        case 0x67:if(f)return -3;z=next;next=(a+imm)&~1u;break;
+        case 0x63:{int take;switch(f){case 0:take=a==b;break;case 1:take=a!=b;break;case 4:take=slt(a,b);break;case 5:take=!slt(a,b);break;case 6:take=a<b;break;case 7:take=a>=b;break;default:return -3;}if(take)next=pc+sx(((i>>31)<<12)|(((i>>7)&1)<<11)|(((i>>25)&63)<<5)|(((i>>8)&15)<<1),13);wr=0;break;}
+        case 3:{unsigned n;if(f==0||f==4)n=1;else if(f==1||f==5)n=2;else if(f==2)n=4;else return -3;uint32_t addr=a+imm;if((addr&(n-1))||!access(v,addr,n,RV_R))return -4;z=get(v->mem+addr,n);if(f<2)z=sx(z,n*8);break;}
+        case 0x23:{if(f>2)return -3;unsigned n=1u<<f;uint32_t addr=a+sx((h<<5)|d,12);if((addr&(n-1))||!access(v,addr,n,RV_W))return -4;put(v->mem+addr,n,b);wr=0;break;}
+        case 0x13:switch(f){case 0:z=a+imm;break;case 2:z=slt(a,imm);break;case 3:z=a<imm;break;case 4:z=a^imm;break;case 6:z=a|imm;break;case 7:z=a&imm;break;case 1:if(h)return -3;z=a<<t;break;case 5:if(h!=0&&h!=32)return -3;z=h?sra(a,t):a>>t;break;}break;
+        case 0x33:if(h==1){switch(f){case 0:z=a*b;break;case 1:z=(uint32_t)((uint64_t)((int64_t)(int32_t)a*(int64_t)(int32_t)b)>>32);break;case 2:z=(uint32_t)((uint64_t)((int64_t)(int32_t)a*(int64_t)b)>>32);break;case 3:z=(uint32_t)(((uint64_t)a*b)>>32);break;case 4:z=!b?~0u:(a==0x80000000u&&b==~0u)?a:(uint32_t)((int32_t)a/(int32_t)b);break;case 5:z=b?a/b:~0u;break;case 6:z=!b?a:(a==0x80000000u&&b==~0u)?0:(uint32_t)((int32_t)a%(int32_t)b);break;case 7:z=b?a%b:a;break;}}else {if(h&&!(h==32&&(f==0||f==5)))return -3;switch(f){case 0:z=h?a-b:a+b;break;case 1:z=a<<(b&31);break;case 2:z=slt(a,b);break;case 3:z=a<b;break;case 4:z=a^b;break;case 5:z=h?sra(a,b&31):a>>(b&31);break;case 6:z=a|b;break;case 7:z=a&b;break;}}break;
+        case 0x0f:if(f!=0)return -3;wr=0;break;
+        case 0x73:if(i!=0x73)return -3;z=(uint32_t)syscall(v,io,ctx);d=10;break;
+        default:return -3;
+        }
+        if(next&3)return -2;
+        if(wr&&d)v->r[d]=z;
+        v->pc=next;v->steps++;
+    }return v->halted?0:1;
+}

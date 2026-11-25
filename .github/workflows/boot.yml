@@ -1,0 +1,22 @@
+name: Independent kernel boot
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  qemu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install freestanding toolchain and emulator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld make gcc qemu-system-x86
+      - name: Execute boot smoke test
+        run: make boot-test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vlk-boot
+          path: dist/vlk-boot.elf

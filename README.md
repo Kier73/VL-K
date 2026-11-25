@@ -135,3 +135,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Constructive temporal refinement
 
 `vlk refine TABLE` admits a sparse duration Ground when a weighted residue table describes a global translation and sparse temporal exceptions; otherwise retains an exact weighted quotient. The service accepts newline JSON `{ "x": 0, "ticks": "1000000", "maximum": "1000000" }`. Ordinary guest loops with equal translations and a single exceptional branch duration can use the sparse clock automatically. See [constructive refinement](docs/REFINEMENT.md).
+
+## Conventional ELF and freestanding kernel
+
+`make all boot` builds a hosted RV32IM ELF runner and freestanding i386 Multiboot image. `vlk elf dist/demo.rv32 kernel` interprets standard compiled machine code; `make boot-test` exercises the independent boot target in QEMU. See [conventional kernel contract](docs/CONVENTIONAL_KERNEL.md) for the admitted ABI and validation boundaries.
