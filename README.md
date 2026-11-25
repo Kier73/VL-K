@@ -89,3 +89,12 @@ Resident, zero-filled and periodic backing share the same read/write interface. 
 ## Stress and measurement
 
 `make test` includes randomized state-machine tests against an eager byte oracle, Linux mmap differential checks, SQLite database reconstruction and a test-only guest checksum workload verified by zlib. `python3 benchmarks/memory_reads.py` reports local read timings and verifies the same digest for each backend. Compact memory is not assumed to outperform conventional memory on dense accesses.
+
+## Guest programs and conditional paths
+
+```sh
+export PATH="$PWD/dist:$PATH"
+printf 'Hello, VL-K' | vlk guest examples/guest-echo.json
+```
+
+The guest ISA includes eight u32 registers, ordinary branches, byte memory access, binary streams and exit status. Repeated pure conditional blocks can use automatic exact finite-selector navigation. See [guest and layered path contract](docs/LAYERED_PATH.md). Native host commands still use their existing execution path. This is not a Linux-compatible guest loader yet.

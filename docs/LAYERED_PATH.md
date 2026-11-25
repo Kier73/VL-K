@@ -1,0 +1,19 @@
+# K2.3 — Guest instruction engine and layered path experiment
+
+## Guest interface
+
+vlk guest PROGRAM [--budget N] [--mode auto|reference|ground] reads a JSON program. Optional memory entries have start, size and hexadecimal pattern. Eight u32 registers begin at zero. Instructions: set d,imm; mov/add/mul/xor d,s; load8 d,address-register; store8 address-register,s; jmp target; jnz register,target; read d (one byte or 0xffffffff EOF); write s (low byte); halt s (low byte exit status); repeat d,p,n,cases,selector (distinct registers, bounded pure repeated conditional affine block). Branch targets are instruction indices. Arithmetic wraps modulo 2^32. Memory addresses from registers are u32; underlying software space supports u64. Instruction budget is per run call; path budget separately bounds charged repeat operations within that call. CLI uses one run call and returns 125 for recognized guest faults or exhaustion. No automatic lifting of arbitrary branch sequences yet. This is a hosted Python guest, not an ELF loader, Linux ABI, trusted sandbox, or asynchronous scheduler. Input/output can block and external effects cannot be rolled back. Untrusted programs need additional resource isolation and strict loader limits.
+
+## Layered Path Ground Conjecture: an exact subclass
+
+Let x live in Z/(2^32). A selector p chooses the affine update T_p(x)=a_p*x+b_p mod 2^32. Each case is [a,b,next]. Clock selection follows a finite next-state table. Residue selection uses p=x mod m, with m equal to case count. The residue selector admits a closed quotient whenever m divides 2^32, since reducing after wrap then modulo m equals reduction modulo m directly. Hence p evolves as (a_p*p+b_p) mod m. This is sufficient, not necessary; other quotients might be admitted by stronger evidence.
+
+Discover the orbit of p only until count is reached or a selector repeats. The finite orbit consists of a transient prefix, then a cycle. Apply the prefix in order, compose the cycle maps in order (not generally commutative), exponentiate that composite, then apply the remaining tail. Exactness follows from the closed selector quotient and associativity of affine composition. Full x need not repeat. For m cases, O(min(m,n)+log n) selector/map operations and O(m) orbit space, in fixed-width arithmetic. Table validation is O(m) and excluded from charged work; charge one per selector discovery, map composition or application; reference charges two per transition. Cost bound is conservative, not measured cycles. No global nonlinear shortcut claim. Non-power-of-two residue selectors conservatively fall back; force-ground rejects them. Counterexample: at x=2^32-1, m=3, adding one wraps to zero, but naive residue-only +1 gives one. Effectful blocks must not be replaced by this pure path evaluator.
+
+## Evidence
+
+Local clean self-build through Supervisor passed 12 suites. 3000 generated paths, three modes against independently written iteration. Clock path [(1,7,1),(3,0,2),(1,2,1)] from x=5,p=0: trillion transitions, x=853352458,p=2, 68 charged operations; independent modular exponentiation. State-selected four-case path [(1,1,0),(3,1,0),(1,3,0),(5,1,0)] from zero: trillion transitions, x=131284992,p=0, 55 units, independent closed form 2*(3^(n/2)-1) mod 2^32. Guest 10,000-block repetition: 20,000 reference units vs 26 Ground units, identical registers/output/exit. Guest binary XOR workload: 16 KiB, 163849 instructions, independent Python byte oracle; CLI binary echo and budget exhaustion. No wall-clock performance claim. CI independent.
+
+## Next
+
+Extract candidate repeated blocks from ordinary bytecode/control-flow graphs, track effects and observation boundaries, test selector quotients that depend on multiple registers and nonperiodic hierarchies, and integrate with guest scheduling. Advance conventional executable loading and host syscall contracts independently; expose optimization as backend policy, not application syntax.
