@@ -54,8 +54,6 @@ def navigate(plan, registers, remaining, path_budget):
     maximum=registers[c] or 2**32
     lengths=(6+len(left),6+len(right))
     upper=min(maximum,remaining//min(lengths))
-    if upper<=4*m+2*upper.bit_length()+4 or path_budget < m+len(left)+len(right)+1:
-        return None
     def affine(body):
         a,b=1,0
         for op,r in body:
@@ -64,6 +62,13 @@ def navigate(plan, registers, remaining, path_budget):
             else: b=(b+v)&MASK
         return a,b,0
     maps=(affine(left),affine(right))
+    # Identical transformations and durations admit a one-state selector.
+    # Keep the original residue for reconstructing the observable scratch register.
+    original_m=m
+    if maps[0]==maps[1] and lengths[0]==lengths[1]:
+        m=1
+    if upper<=4*m+2*upper.bit_length()+4 or path_budget < m+len(left)+len(right)+1:
+        return None
     cases=[maps[0]]+[maps[1]]*(m-1)
     work=m+len(left)+len(right)+1
     # Find the selector orbit and its weighted prefix; do not consume a partial arm.
@@ -94,4 +99,4 @@ def navigate(plan, registers, remaining, path_budget):
     except RuntimeError:
         return None
     a,b,_=cases[p]
-    return n,s,x,c,p,(a*y+b)&MASK,w+work,ticks,exit_pc
+    return n,s,x,c,y%original_m,(a*y+b)&MASK,w+work,ticks,exit_pc

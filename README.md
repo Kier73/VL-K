@@ -127,3 +127,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Durable guest applications and Ground research
 
 `vlk app examples/guest-file-xor.json input.bin authority.db output.db job-001` executes a bounded guest file transformation and publishes its output to a transactional sink. `vlk ground TABLE` discovers an exact reduced residue selector and serves newline JSON observations. See [application and research contract](docs/APPLICATION_BOOTSTRAP.md). `python3 tests/quotient.py /path/to/pinned-ecpu` also checks observations against E-CPU's unchanged RRNS utility.
+
+## Weighted Grounds and portable application images
+
+`vlk pack PROGRAM IMAGE` creates a versioned portable guest image; `vlk app IMAGE INPUT AUTHORITY SINK JOB` runs it through the same bounded application contract. Committed output can be delivered to an explicitly pinned sink over mutually authenticated TLS, with retry after receiver death. `python3 tests/weighted_ground.py` exercises weighted selector reduction, including a counterexample where state-only equivalence is insufficient. See [weighted Ground and effect contract](docs/WEIGHTED_BOOTSTRAP.md).

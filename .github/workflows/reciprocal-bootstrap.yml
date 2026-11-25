@@ -27,6 +27,8 @@ jobs:
           make all
       - name: Execute pinned E-CPU RRNS utility against VL-K
         run: ./dist/vlk run python tests/ecpu_rrns.py _ecpu
+      - name: Cross-check weighted Ground time coordinates using E-CPU RRNS
+        run: ./dist/vlk run python tests/weighted_ground.py _ecpu
       - name: E-CPU's own research tests under the VL-K command surface
         working-directory: _ecpu
         run: ../dist/vlk run python -m pytest -q tests/test_affine_orbit.py tests/test_recurrence_observer.py tests/test_transit_compute.py

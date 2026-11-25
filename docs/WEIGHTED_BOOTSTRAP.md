@@ -1,0 +1,31 @@
+# K2.10 — Observer-relative reduction, portable images and authenticated output
+
+## Weighted selector discovery
+
+For x in Z/(2^32), a power-of-two residue table assigns (a_p,b_p,w_p), where p=x mod m, T_p(x)=a_p*x+b_p and w_p is a positive logical duration. A candidate d dividing m selects representative row (A,B,W) at p mod d. Admit only if w_p=W, (a_p-A)*m=0 mod 2^32 and (a_p-A)*p+b_p-B=0 mod 2^32 for every row. Substitution proves equality on each selected domain; induction preserves complete-iteration states and their cumulative durations. This is the smallest power-of-two quotient using original first-d representatives, not the smallest arbitrary synthesized representation.
+
+WeightedGround.observe returns state, completed iterations, elapsed duration, last original pre-transition residue (None if no iteration), and charged work for a bounded time and iteration request. Discover the reduced selector orbit, accumulate positive durations, divide the cyclic portion by cycle weight, then scan its remaining prefix. Realize n-1 steps and explicitly apply the last map to reconstruct the original residue. Work counts selector discovery, tail selection, path realization and final application; excludes validation, table allocation and wall time. No partial-arm register reconstruction is claimed by this table API. Ordinary guest execution separately handles residual instructions.
+
+The automatic ordinary guest optimizer now uses a constant-size selector when both proved affine maps and branch durations are identical, while reconstructing scratch from the full pre-transition state. This is a cheap special case, not a general integration of table discovery into arbitrary CFGs.
+
+Evidence: 150 randomized tables, 3750 independent sequential coordinate comparisons; 128 full-width time observations of a constructed 4096-row system reduced to two weighted rows, 4098 admission checks, 2106051 -> 12225 charged navigation units. All matched the full-table navigator, separate modular formula, and pinned E-CPU RRNS (blob cb1d4ba145c584c437bf38f17f2899d50f83728c). The RRNS cross-check validates the realized value; the timing/last-residue checks use the independent formula and full navigator. The one-state state-only quotient of an increment map with one different-duration row requires all 4096 rows under this weighted representative family. 30 unequal-duration ordinary guests matched all interruption states. An unannotated equal-map equal-duration guest navigated 30064771072 logical instructions using 70 charged units and one ordinary halt dispatch; original scratch 4095. No wall-clock speedup measured in this pass.
+
+This illustrates observer-relative behavioral complexity: exactness for terminal state does not establish exactness for time, intermediate registers or effects. The observation contract determines which distinctions can be removed. A failed refinement is evidence about which dependencies must be retained, not evidence of universal irreducibility.
+
+## Portable images
+
+vlk pack PROGRAM IMAGE writes an 8-byte versioned magic, big-endian u32 payload length, SHA-256 payload digest, and canonical validated application JSON. vlk app accepts the image or existing JSON input. Strict length, digest, schema and canonicality are checked. The digest identifies content, not origin or signature. Existing instruction, memory, input and output limits remain. A 216-byte image processed an actual 16 KiB file through the native launcher and matched an independent byte transform; three malformed images rejected. This is a portable guest executable envelope, not ELF or a POSIX ABI.
+
+## Effect destination and authenticated delivery
+
+New outbox publications atomically create an unbound destination record. Before first delivery, the trusted caller pins the sink identity under the authority write transaction. Each SQLite sink persists a random UUID, and validates its identity under the same write transaction as effect insertion. A different destination is refused even on retry. Legacy outbox rows lacking binding metadata are refused rather than silently reassigned; explicit trusted migration/reconciliation is required. A caller selecting an unreachable sink first may leave the effect bound there; operator provisioning and reconciliation remain needed. A cloned/rolled-back sink DB, malicious local writer, malicious authenticated peer or compromised credentials are outside the trust model.
+
+RemoteSink implements the same trusted sink contract over one bounded length-prefixed JSON request per TCP/TLS connection. Require verified server name, client certificates, TLS 1.2+, and server-side expected client DNS SAN; receiver checks pinned sink identity, receipt shape, bounded canonical hex output and payload digest. Reply binds the exact request after committed insertion. The authenticated sender is trusted to deliver its committed outbox; the receiver does not independently prove guest execution. The service function is a building block, not a hardened public listener or distributed consensus mechanism.
+
+Actual loopback experiment: separate VL-K-launched receiver rejects wrong peer SAN and wrong sink identity. Valid receiver SIGKILL after sink insertion before reply. Sender retains unacknowledged outbox; replacement receiver opens same persisted sink and two retries acknowledge one record. Different sink and ambiguous legacy destination rejected; prior concurrent local delivery regression passed. No multi-machine deployment or full E-CPU effect channel executed.
+
+## Validation
+
+All 21 local suites passed across split invocations through VL-K. Full self-build passed first 13 before environment termination during weighted_lift; weighted_lift, debugger, observation, authority, application, quotient, weighted_ground and effect_image passed separately. Pinned standalone E-CPU RRNS additionally executed. Full reciprocal E-CPU CI remains queued; new weighted test added to that workflow. E-CPU repo unchanged.
+
+Next: synthesize representative laws beyond first-d rows, discover compact duration laws even for sparse exceptions, integrate observer contracts and adaptive costs into guest optimization, and run the authenticated effect adapter through E-CPU's full reliable fabric. Expand filesystem and syscall compatibility without placing authority mechanics in applications.
