@@ -19,8 +19,10 @@ def command(line,marker):
 try:
     expect(b'vlk> ')
     assert b'VL-K bare metal' in transcript and b'demo 54c69d41\n' in transcript and b'guest exited 0' in transcript,bytes(transcript)
-    command(b'help',b'help run halt\r\n');expect(b'vlk> ')
+    command(b'help',b'help run file halt\r\n');expect(b'vlk> ')
     command(b'run',b'guest exited 0');expect(b'vlk> ');assert b'demo 54c69d41\n' in transcript
+    command(b'file',b'count 01\n');expect(b'vlk> ')
+    command(b'file',b'count 02\n');expect(b'vlk> ')
     command(b'halt',b'halted\r\n')
     print('QEMU Multiboot entry, real serial shell, repeated RV32 ELF execution, halt command passed')
 finally:

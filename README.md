@@ -139,3 +139,7 @@ See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utili
 ## Conventional ELF and freestanding kernel
 
 `make all boot` builds a hosted RV32IM ELF runner and freestanding i386 Multiboot image. `vlk elf dist/demo.rv32 kernel` interprets standard compiled machine code; `make boot-test` exercises the independent boot target in QEMU. See [conventional kernel contract](docs/CONVENTIONAL_KERNEL.md) for the admitted ABI and validation boundaries.
+
+## File-backed compiled applications
+
+`vlk elf --volume workspace.vfs dist/file.rv32 put source < input.bin` creates a file inside the guest volume. Use `xor source result` and `get result` with the same volume to transform and retrieve it. The freestanding serial monitor also has a `file` command that increments a file-backed counter in its RAM filesystem. See [guest filesystem contract](docs/GUEST_FILESYSTEM.md).

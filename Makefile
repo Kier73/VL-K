@@ -4,7 +4,7 @@ CFLAGS := -std=c11 -O2 -Wall -Wextra -Werror
 EXPORTS := vk_abi vk_spawn vk_fork vk_exit vk_observe vk_advance vk_restore vk_value vk_work vk_time vk1_begin vk1_seed vk1_append vk1_run vk1_result vk1_method vk1_work
 WASM_EXPORTS := $(foreach x,$(EXPORTS),-Wl,--export=$(x))
 .PHONY: all test clean
-all: dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32
+all: dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/file.rv32
 dist:
 	mkdir -p dist
 dist/vlk.wasm: src/vlk.c src/vlk1.c src/vlk.h | dist
@@ -37,19 +37,20 @@ test: all boot dist/filter.rv32 dist/abi.rv32
 	python3 tests/effect_image.py
 	python3 tests/refine.py
 	python3 tests/elf.py
+	python3 tests/fs.py
 clean:
-	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/vlk-boot.elf
+	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/vlk-boot.elf
 
 RVFLAGS := --target=riscv32-none-elf -march=rv32im -mabi=ilp32 -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -msmall-data-limit=0 -O2 -nostdlib -fuse-ld=lld -Wl,--no-relax,-T,examples/rv32/app.ld
 BOOTFLAGS := --target=i386-none-elf -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -mno-sse -mno-mmx -O2 -Wall -Wextra -Werror
 .PHONY: boot
 boot: dist/vlk-boot.elf
-dist/vlk-elf: src/rv32.c src/rv32.h src/elf_run.c | dist
-	$(CC) $(CFLAGS) src/rv32.c src/elf_run.c -o $@
+dist/vlk-elf: src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h src/elf_run.c | dist
+	$(CC) $(CFLAGS) src/rv32.c src/rvfs.c src/elf_run.c -o $@
 dist/demo.rv32: examples/rv32/demo.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/demo.c -o $@
-dist/vlk-boot.elf: boot/start.S boot/kernel.c boot/embed.S boot/link.ld src/rv32.c src/rv32.h dist/demo.rv32 | dist
-	$(CLANG) $(BOOTFLAGS) -Isrc -nostdlib -static -fuse-ld=lld -Wl,-no-pie,-T,boot/link.ld boot/start.S boot/kernel.c boot/embed.S src/rv32.c -o $@
+dist/vlk-boot.elf: boot/start.S boot/kernel.c boot/embed.S boot/link.ld src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h dist/demo.rv32 dist/file.rv32 | dist
+	$(CLANG) $(BOOTFLAGS) -Isrc -nostdlib -static -fuse-ld=lld -Wl,-no-pie,-T,boot/link.ld boot/start.S boot/kernel.c boot/embed.S src/rv32.c src/rvfs.c -o $@
 dist/filter.rv32: examples/rv32/filter.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/filter.c -o $@
 dist/abi.rv32: examples/rv32/abi.S examples/rv32/app.ld | dist
@@ -57,3 +58,6 @@ dist/abi.rv32: examples/rv32/abi.S examples/rv32/app.ld | dist
 .PHONY: boot-test
 boot-test: boot
 	python3 tests/boot_qemu.py
+
+dist/file.rv32: examples/rv32/file.c examples/rv32/start.S examples/rv32/app.ld | dist
+	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/file.c -o $@

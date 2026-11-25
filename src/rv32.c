@@ -30,13 +30,20 @@ int rv_load(RV *v,uint8_t *mem,const uint8_t *f,size_t len,int argc,const char *
 }
 static uint32_t sra(uint32_t a,unsigned b){return b?(a>>b)|((a&0x80000000u)?(~0u<<(32-b)):0):a;}
 static int slt(uint32_t a,uint32_t b){return (a^0x80000000u)<(b^0x80000000u);}
-static int32_t syscall(RV *v,rv_io io,void *ctx){uint32_t n=v->r[17],a=v->r[10],b=v->r[11],c=v->r[12];
+static int name_at(RV *v,uint32_t a,char *name){for(unsigned i=0;i<FS_NAME;i++){if(!access(v,a,1,RV_R))return -14;name[i]=(char)v->mem[a++];if(!name[i])return 0;}return -36;}
+static int32_t syscall(RV *v,rv_io io,void *ctx,RVFS *fs){uint32_t n=v->r[17],a=v->r[10],b=v->r[11],c=v->r[12];
     if(n==93||n==94){v->halted=1;v->status=a&255;return 0;}
-    if(n==63||n==64){if((n==63&&a!=0)||(n==64&&a!=1&&a!=2))return -9;if(!access(v,b,c,n==63?RV_W:RV_R))return -14;return io?io(ctx,n==64,a,v->mem+b,c):-38;}
+    if(n==56||n==35){if(a!=(uint32_t)-100)return -22;if(n==35&&c)return -22;char name[FS_NAME];int r=name_at(v,b,name);if(r)return r;return n==56?fs_open(fs,name,c):fs_unlink(fs,name);}
+    if(n==57)return fs_close(fs,a);
+    if(n==62){uint32_t ptr=v->r[13];if(!access(v,ptr,8,RV_W))return -14;int32_t r=fs_seek(fs,a,b,c,v->r[14]);if(r<0)return r;put(v->mem+ptr,4,(uint32_t)r);put(v->mem+ptr+4,4,0);return 0;}
+    if(n==63||n==64){if(a<3){if(!(fs->stdio&(1u<<a))||(n==63&&a!=0)||(n==64&&a==0))return -9;}else if(a-3>=FS_FDS||!fs->fds[a-3].used||((n==63&&(fs->fds[a-3].flags&3)==1)||(n==64&&!(fs->fds[a-3].flags&3))))return -9;
+        if(!access(v,b,c,n==63?RV_W:RV_R))return -14;
+        if(a<3)return io?io(ctx,n==64,a,v->mem+b,c):-38;
+        return n==63?fs_read(fs,a,v->mem+b,c):fs_write(fs,a,v->mem+b,c); }
     if(n==214){if(a>=v->heap&&a<=RV_STACK){uint32_t old=(v->brk+RV_PAGE-1)/RV_PAGE,now=(a+RV_PAGE-1)/RV_PAGE;for(uint32_t p=old;p<now;p++){zero(v->mem+p*RV_PAGE,RV_PAGE);v->pages[p]=RV_R|RV_W;}for(uint32_t p=now;p<old;p++)v->pages[p]=0;v->brk=a;}return (int32_t)v->brk;}
     return -38;
 }
-int rv_run(RV *v,uint32_t budget,rv_io io,void *ctx){
+int rv_run(RV *v,uint32_t budget,rv_io io,void *ctx,RVFS *fs){
     while(!v->halted&&budget--){uint32_t pc=v->pc;if((pc&3)||!access(v,pc,4,RV_X))return -2;
         uint32_t i=get(v->mem+pc,4),op=i&127,d=(i>>7)&31,f=(i>>12)&7,s=(i>>15)&31,t=(i>>20)&31,h=i>>25,a=v->r[s],b=v->r[t],z=0,next=pc+4,imm=sx(i>>20,12);int wr=1;
         switch(op){
@@ -49,7 +56,7 @@ int rv_run(RV *v,uint32_t budget,rv_io io,void *ctx){
         case 0x13:switch(f){case 0:z=a+imm;break;case 2:z=slt(a,imm);break;case 3:z=a<imm;break;case 4:z=a^imm;break;case 6:z=a|imm;break;case 7:z=a&imm;break;case 1:if(h)return -3;z=a<<t;break;case 5:if(h!=0&&h!=32)return -3;z=h?sra(a,t):a>>t;break;}break;
         case 0x33:if(h==1){switch(f){case 0:z=a*b;break;case 1:z=(uint32_t)((uint64_t)((int64_t)(int32_t)a*(int64_t)(int32_t)b)>>32);break;case 2:z=(uint32_t)((uint64_t)((int64_t)(int32_t)a*(int64_t)b)>>32);break;case 3:z=(uint32_t)(((uint64_t)a*b)>>32);break;case 4:z=!b?~0u:(a==0x80000000u&&b==~0u)?a:(uint32_t)((int32_t)a/(int32_t)b);break;case 5:z=b?a/b:~0u;break;case 6:z=!b?a:(a==0x80000000u&&b==~0u)?0:(uint32_t)((int32_t)a%(int32_t)b);break;case 7:z=b?a%b:a;break;}}else {if(h&&!(h==32&&(f==0||f==5)))return -3;switch(f){case 0:z=h?a-b:a+b;break;case 1:z=a<<(b&31);break;case 2:z=slt(a,b);break;case 3:z=a<b;break;case 4:z=a^b;break;case 5:z=h?sra(a,b&31):a>>(b&31);break;case 6:z=a|b;break;case 7:z=a&b;break;}}break;
         case 0x0f:if(f!=0)return -3;wr=0;break;
-        case 0x73:if(i!=0x73)return -3;z=(uint32_t)syscall(v,io,ctx);d=10;break;
+        case 0x73:if(i!=0x73)return -3;z=(uint32_t)syscall(v,io,ctx,fs);d=10;break;
         default:return -3;
         }
         if(next&3)return -2;

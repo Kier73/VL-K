@@ -2,6 +2,7 @@
 #define VL_RV32_H
 #include <stdint.h>
 #include <stddef.h>
+#include "rvfs.h"
 #define RV_SIZE (4u*1024u*1024u)
 #define RV_PAGE 4096u
 #define RV_STACK (RV_SIZE-65536u)
@@ -18,5 +19,5 @@ typedef struct {
 } RV;
 typedef int32_t (*rv_io)(void *, int, uint32_t, uint8_t *, uint32_t);
 int rv_load(RV *, uint8_t *, const uint8_t *, size_t, int, const char *const *);
-int rv_run(RV *, uint32_t, rv_io, void *);
+int rv_run(RV *, uint32_t, rv_io, void *, RVFS *);
 #endif
