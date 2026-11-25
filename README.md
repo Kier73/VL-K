@@ -123,3 +123,7 @@ The guest ISA includes eight u32 registers, ordinary branches, byte memory acces
 ## Reciprocal E-CPU bootstrap
 
 See [bootstrap experiments](docs/BOOTSTRAP.md). The pinned standalone RRNS utility passed cross-implementation tests through VL-K. The reciprocal workflow is an additional integration target for the full E-CPU runtime and reliable-channel observation adapter.
+
+## Durable guest applications and Ground research
+
+`vlk app examples/guest-file-xor.json input.bin authority.db output.db job-001` executes a bounded guest file transformation and publishes its output to a transactional sink. `vlk ground TABLE` discovers an exact reduced residue selector and serves newline JSON observations. See [application and research contract](docs/APPLICATION_BOOTSTRAP.md). `python3 tests/quotient.py /path/to/pinned-ecpu` also checks observations against E-CPU's unchanged RRNS utility.

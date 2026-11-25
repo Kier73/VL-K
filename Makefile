@@ -31,5 +31,7 @@ test: all
 	python3 tests/debugger.py
 	python3 tests/observation.py
 	python3 tests/authority.py
+	python3 tests/application.py
+	python3 tests/quotient.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk

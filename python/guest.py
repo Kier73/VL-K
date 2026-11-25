@@ -8,7 +8,7 @@ from lift import recognize, navigate
 
 
 class Guest:
-    def __init__(self, program, memory=None, *, mode='auto', input_stream=None, output_stream=None):
+    def __init__(self, program, memory=None, *, mode='auto', input_stream=None, output_stream=None, descriptors=None):
         self.program = tuple(tuple(i) for i in program)
         self.memory = AddressSpace() if memory is None else memory
         self.r = [0]*8
@@ -18,6 +18,7 @@ class Guest:
         self.mode = mode
         self.input = input_stream
         self.output = output_stream
+        self.descriptors = {} if descriptors is None else dict(descriptors)
         self.work = 0
         self.dispatches = 0
         self.lifted = 0
@@ -66,6 +67,14 @@ class Guest:
             elif op == 'read':
                 d=reg(a[0]); b=self.input.read(1); self.r[d]=b[0] if b else MASK
             elif op == 'write': self.output.write(bytes([self.r[reg(a[0])]&255]))
+            elif op == 'readfd':
+                d,f=map(reg,a); stream=self.descriptors.get(self.r[f], (None,None))[0]
+                if stream is None: raise PermissionError('descriptor not readable')
+                b=stream.read(1); self.r[d]=b[0] if b else MASK
+            elif op == 'writefd':
+                f,s=map(reg,a); stream=self.descriptors.get(self.r[f], (None,None))[1]
+                if stream is None: raise PermissionError('descriptor not writable')
+                stream.write(bytes([self.r[s]&255]))
             elif op == 'repeat':
                 d,p,n,cases,selector=a; d,p,n=map(reg,(d,p,n))
                 if d==p or d==n or p==n: raise ValueError('repeat registers must be distinct')

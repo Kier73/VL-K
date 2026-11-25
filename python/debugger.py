@@ -28,11 +28,13 @@ def load_json(path):
     return json.loads(data)
 
 
-def validate(program):
+def validate(program, *, application=False):
     if not isinstance(program, (tuple,list)) or not 1 <= len(program) <= 4096:
         raise ValueError('invalid program size')
     forms = {'set':('r','v'), 'mov':('r','r'), 'add':('r','r'), 'mul':('r','r'),
              'xor':('r','r'), 'and':('r','r'), 'jmp':('p',), 'jnz':('r','p'), 'halt':('r',)}
+    if application:
+        forms.update({'load8':('r','r'),'store8':('r','r'),'readfd':('r','r'),'writefd':('r','r'),'read':('r',),'write':('r',)})
     limits = {'r':7,'v':MASK,'p':len(program)-1}
     result=[]
     for q in program:
