@@ -16,6 +16,7 @@ dist/vlk: src/launch.c | dist
 test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32 dist/descriptor.rv32 dist/control.rv32 dist/worker.rv32 dist/shell.rv32 dist/cow.rv32 dist/execfs.rv32 dist/compiler.rv32
 	python3 tests/native.py
 	node tests/wasm.mjs
+	node tests/realization.mjs
 	node tests/k1.mjs
 	python3 tests/k1_native.py
 	node tests/adapter.mjs

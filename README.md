@@ -223,3 +223,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Observation-realized block projection
 
 `node compat/unkernel/observation-device-test.mjs` exercises a read-only conventional block ABI over verified historical witnesses, certified zero subtrees, bounded cache and local/TLS realization fallback. See [observation realization contract](docs/OBSERVATION_REALIZATION.md).
+
+### Shared computational realization
+
+`make dist/vlk.wasm && node tests/realization.mjs` qualifies the common intention dispatcher over the original WASM execution modes. The observation device uses the same dispatcher for structural derivation, retained pages and verified pathways. See [realization dispatcher contract](docs/REALIZATION_DISPATCHER.md).

@@ -1,8 +1,9 @@
 // A read-only block projection over an admitted immutable coordinate Ground.
 import {requireReceipt, verifyWitness} from './coordinate-witness.mjs';
+import {realize} from '../../js/realization.mjs';
 const PAGE=4096, EMPTY='0'.repeat(64), LIMIT=1024*1024;
 export class ObservationDevice {
-  #receipt; #routes; #cachePages; #cache=new Map(); #zeros=[]; #busy=0; #stats={attempts:0,refusals:0,verified:0,cache:0,derived:0};
+  #receipt; #routes; #cachePages; #cache=new Map(); #zeros=[]; #busy=0; #timing={discovery:0,realization:0,admission:0,total:0,charged:0}; #stats={attempts:0,refusals:0,verified:0,cache:0,derived:0};
   constructor(receipt,routes,{cachePages=16}={}){
     requireReceipt(receipt,receipt);
     if(!Array.isArray(routes)||routes.length>8||routes.some(r=>typeof r?.observe!=='function')||!Number.isInteger(cachePages)||cachePages<0||cachePages>256)throw Error('invalid realization policy');
@@ -11,23 +12,24 @@ export class ObservationDevice {
   }
   get size(){return this.#receipt.pages*PAGE;} get blockSize(){return 512;} get readOnly(){return true;} get persistent(){return false;}
   stats(){return {...this.#stats};}
+  realizationCosts(){return {...this.#timing};}
   async #page(i){
-    if(this.#zeros.some(([lo,hi])=>lo<=i&&i<hi)){this.#stats.derived++;return new Uint8Array(PAGE);}
-    if(this.#cache.has(i)){const b=this.#cache.get(i);this.#cache.delete(i);this.#cache.set(i,b);this.#stats.cache++;return b;}
-    for(const route of this.#routes){
-      this.#stats.attempts++;
-      try{
-        const w=await route(this.#receipt,i),b=verifyWitness(w,this.#receipt,i);
-        this.#stats.verified++;
-        // A verified empty sibling commits the entire corresponding subtree to zero.
-        const depth=w.siblings.length;
-        for(let k=0;k<depth;k++)if(w.siblings[k]===EMPTY){const width=2**(depth-1-k),lo=(Math.floor(i/width)^1)*width;if(!this.#zeros.some(([a,z])=>a<=lo&&lo+width<=z))this.#zeros.push([lo,lo+width]);}
-        if(b.every(x=>x===0)&&!this.#zeros.some(([a,z])=>a<=i&&i<z))this.#zeros.push([i,i+1]);
-        if(this.#cachePages){this.#cache.set(i,b);while(this.#cache.size>this.#cachePages)this.#cache.delete(this.#cache.keys().next().value);}
-        return b;
-      }catch{this.#stats.refusals++;}
-    }
-    throw Error('no sufficient admitted realization');
+    const intent=Object.freeze({domain:'vlk.block-observation.v1',receipt:this.#receipt,coordinate:i});
+    const zero={id:'derived-zero',probe:()=>this.#zeros.some(([lo,hi])=>lo<=i&&i<hi)?1:null,run:()=>new Uint8Array(PAGE),admit:(_,b)=>{this.#stats.derived++;return b;}};
+    const cached={id:'retained-page',probe:()=>this.#cache.has(i)?2:null,run:()=>{const b=this.#cache.get(i);if(!b)throw Error('evicted');return b;},admit:(_,b)=>{this.#cache.delete(i);this.#cache.set(i,b);while(this.#cache.size>this.#cachePages)this.#cache.delete(this.#cache.keys().next().value);this.#stats.cache++;return b;}};
+    const routes=this.#routes.map((route,j)=>({id:'witness-'+j,probe:()=>3+j,run:async()=>{this.#stats.attempts++;try{return await route(this.#receipt,i);}catch(e){this.#stats.refusals++;throw e;}},admit:(_,w)=>{
+      let b;try{b=verifyWitness(w,this.#receipt,i);}catch(e){this.#stats.refusals++;throw e;}
+      this.#stats.verified++;
+      const depth=w.siblings.length;
+      for(let k=0;k<depth;k++)if(w.siblings[k]===EMPTY){const width=2**(depth-1-k),lo=(Math.floor(i/width)^1)*width;if(!this.#zeros.some(([a,z])=>a<=lo&&lo+width<=z))this.#zeros.push([lo,lo+width]);}
+      if(b.every(x=>x===0)&&!this.#zeros.some(([a,z])=>a<=i&&i<z))this.#zeros.push([i,i+1]);
+      if(this.#cachePages){this.#cache.set(i,b);while(this.#cache.size>this.#cachePages)this.#cache.delete(this.#cache.keys().next().value);}
+      return b;
+    }}));
+    let receipt;
+    try{const r=await realize(intent,[zero,cached,...routes],65);receipt=r.receipt;return r.value;}
+    catch(e){receipt=e.receipt;throw e;}
+    finally{if(receipt){for(const k of ['discovery','realization','admission','total'])this.#timing[k]+=receipt.timing[k];this.#timing.charged+=receipt.charged;}}
   }
   async read(off,views){
     if(!Array.isArray(views)||views.some(v=>!(v instanceof Uint8Array)))throw TypeError('byte views');
