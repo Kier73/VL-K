@@ -187,3 +187,7 @@ Fork shares mapped pages without copying payload bytes; writes preserve independ
 ## Executable filesystem
 
 The guest shell accepts `install NAME SIZE` followed by exactly SIZE binary bytes, then `run ./NAME ARG` executes the file through the kernel's ELF loader. No catalogue entry is required. See [executable filesystem contract](docs/EXECUTABLE_FILESYSTEM.md). Session files and modes are volatile.
+
+## Guest-hosted compiler
+
+`make all dist/shell.rv32 dist/compiler.rv32` then `./dist/vlk session dist/shell.rv32 cc=dist/compiler.rv32`. Inside the guest, `send in,2,add,out | cc generated` creates a new RV32 ELF; `send A | ./generated` executes it and emits C. See [compiler contract](docs/GUEST_COMPILER.md).
