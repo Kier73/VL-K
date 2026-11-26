@@ -227,3 +227,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Shared computational realization
 
 `make dist/vlk.wasm && node tests/realization.mjs` qualifies the common intention dispatcher over the original WASM execution modes. The observation device uses the same dispatcher for structural derivation, retained pages and verified pathways. See [realization dispatcher contract](docs/REALIZATION_DISPATCHER.md).
+
+### Persistent Ground atlas
+
+`make dist/vlk.wasm && node tests/ground-atlas.mjs` qualifies a retained finite residue law for a nonlinear WASM register program, with independent source-law admission and new temporal intentions after restart. See [Ground atlas contract](docs/GROUND_ATLAS.md).
