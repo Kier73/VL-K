@@ -241,3 +241,7 @@ The atlas now compiles finite transition laws into [tail/cycle coordinates](docs
 ### Multidimensional dependency Grounds
 
 `make dist/vlk.wasm && node tests/dependency-ground.mjs` qualifies min-plus agreement propagation over the four-register algebra, including observer-specific periodicity and refusal of uncontracted dependencies. See [dependency Ground contract](docs/DEPENDENCY_GROUNDS.md).
+
+### Heterogeneous composite Grounds
+
+`make dist/vlk.wasm && node tests/composite-ground.mjs` qualifies phase-aligned contraction combined with closed affine subspaces for complete mixed nonlinear register observations. See [composite Ground contract](docs/COMPOSITE_GROUNDS.md).
