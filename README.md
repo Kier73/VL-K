@@ -171,3 +171,7 @@ The shared kernel scheduler connects compiled guests through bounded pipes, susp
 ## Guest-directed sessions
 
 `make all dist/shell.rv32 dist/filter.rv32` then `vlk session dist/shell.rv32 demo=dist/demo.rv32 filter=dist/filter.rv32`. Inside the guest shell use `run demo kernel`, `send abc | filter Q`, or `quit`. See [guest-directed process contract](docs/GUEST_CONTROL.md). The freestanding monitor also provides `guest` (boot validation pending).
+
+## Structural process memory
+
+Fork shares mapped pages without copying payload bytes; writes preserve independent guest observations through exact copy-on-write. `make dist/cow.rv32 && python3 tests/cow.py` exercises compiled guest forks and an eager byte oracle. See [copy-on-write contract](docs/COPY_ON_WRITE.md).
