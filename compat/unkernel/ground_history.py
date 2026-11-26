@@ -1,6 +1,7 @@
 """Historical coordinate Grounds above the unchanged E-CPU PageBacking."""
 from hashlib import sha256
 from pathlib import Path
+from uuid import uuid4
 from reused.page_ground import PageGroundBacking, PAGE_SIZE, digest
 
 EMPTY = '0' * 64
@@ -37,6 +38,13 @@ class GroundHistory:
             if not 2 <= self.pages <= MAX_PAGES or self.pages & (self.pages-1) or (pages is not None and pages != self.pages):
                 raise ValueError('geometry mismatch')
             self.depth = self.pages.bit_length()-1
+            # Migrate pre-identity stores without changing their historical roots.
+            with self.db:
+                self.db.execute('CREATE TABLE IF NOT EXISTS store_identity (id INTEGER PRIMARY KEY CHECK(id=1), identity TEXT NOT NULL)')
+                self.db.execute('INSERT OR IGNORE INTO store_identity VALUES (1,?)', (uuid4().hex,))
+            self.identity = self.db.execute('SELECT identity FROM store_identity WHERE id=1').fetchone()[0]
+            if len(self.identity)!=32 or any(c not in '0123456789abcdef' for c in self.identity):
+                raise ValueError('invalid store identity')
         except BaseException:
             self.backing.close()
             raise
@@ -163,4 +171,20 @@ class GroundHistory:
             raise
 
     def receipt(self, revision):
-        return {'groundVersion':'vlk.coordinate-ground.v1','pages':self.pages,'revision':revision,'root':self.root(revision)}
+        return {'groundVersion':'vlk.coordinate-ground.v1','identity':self.identity,'pages':self.pages,'revision':revision,'root':self.root(revision)}
+
+    def witness(self, revision, index):
+        """Return a portable observation with a fixed-depth Merkle path."""
+        import base64
+        self._coordinate(index)
+        receipt = self.receipt(revision)
+        key = receipt['root']
+        siblings = []
+        for level in range(self.depth, 0, -1):
+            children = self._children(key, level)
+            bit = (index >> (level-1)) & 1
+            siblings.append(children[1-bit])
+            key = children[bit]
+        raw = ZERO if key == EMPTY else self.backing.get_page(key)
+        return {'receipt':receipt, 'coordinate':index, 'siblings':siblings,
+                'page':base64.b64encode(raw).decode('ascii')}

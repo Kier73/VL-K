@@ -26,6 +26,8 @@ def serve(h, branch):
     def dispatch(q):
         nonlocal revision
         op = q['op']
+        if op == 'witness':
+            return h.witness(q['revision'], q['coordinate'])
         if op == 'receipt':
             return receipt()
         if op == 'read':

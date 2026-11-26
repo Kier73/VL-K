@@ -211,3 +211,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Historical block pathway
 
 `node compat/unkernel/history-device-test.mjs` exercises the asynchronous BlockDevice adapter over a persistent Python Ground interpreter using native E-CPU page backing. See [historical pathway contract](docs/HISTORICAL_PATHWAY.md). Linux ext4 branch qualification remains pending.
+
+### Portable coordinate witnesses
+
+`node compat/unkernel/coordinate-witness-test.mjs` qualifies independent observation verification, durable store identities and branch seals through the historical pathway. See [portable Ground contract](docs/PORTABLE_COORDINATE_WITNESSES.md).

@@ -34,6 +34,7 @@ jobs:
           node compat/unkernel/ground-test.mjs
           python3 compat/unkernel/ground_history_test.py
           node compat/unkernel/history-device-test.mjs
+          node compat/unkernel/coordinate-witness-test.mjs
       - name: Verify and extract pinned upstream release
         run: bash compat/unkernel/prepare.sh
       - name: Run actual Linux guest acceptance
