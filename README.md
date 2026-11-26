@@ -237,3 +237,7 @@ The atlas now compiles finite transition laws into [tail/cycle coordinates](docs
 ### Layered contracting Grounds
 
 `make dist/vlk.wasm && node tests/layered-realization.mjs` qualifies a full-u32 parity-selected family of nonlinear source laws through the shared dispatcher, with algebraic admission and no exhaustive transition table. See [layered Ground contract](docs/LAYERED_CONTRACTION.md).
+
+### Multidimensional dependency Grounds
+
+`make dist/vlk.wasm && node tests/dependency-ground.mjs` qualifies min-plus agreement propagation over the four-register algebra, including observer-specific periodicity and refusal of uncontracted dependencies. See [dependency Ground contract](docs/DEPENDENCY_GROUNDS.md).
