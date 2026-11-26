@@ -1,5 +1,7 @@
 #include "rv32.h"
 #include "module.h"
+#include "rvproc.h"
+static RPKernel processes;
 static RV vm;static RVFS fs;static RVFds fds;static uint8_t ram[RV_SIZE];
 extern const uint8_t app_start[],app_end[],file_start[],file_end[],kernel_end[];
 static const uint8_t *external_image;static uint32_t external_size;
@@ -28,4 +30,13 @@ static void external(void){
     if(!r)r=rv_run(&vm,10000000,stream,0,&fs,&fds);
     if(r||vm.status)print("external failed\r\n");else print("external exited 0\r\n");
 }
-void kmain(uint32_t magic,const uint32_t *info){serial_init();if(magic!=0x2badb002){print("invalid boot\r\n");return;}print("VL-K bare metal\r\n");module(info);run();char line[32];unsigned n=0;print("vlk> ");for(;;){uint8_t c=rx();if(c=='\r'||c=='\n'){tx('\r');tx('\n');line[n]=0;if(eq(line,"run"))run();else if(eq(line,"file"))file();else if(eq(line,"external"))external();else if(eq(line,"help"))print("help run file external halt\r\n");else if(eq(line,"halt")){print("halted\r\n");return;}else if(n)print("unknown command\r\n");n=0;print("vlk> ");}else if(c==8||c==127){if(n){n--;print("\b \b");}}else if(c>=32&&c<127&&n<sizeof(line)-1){line[n++]=(char)c;tx(c);}}}
+static void pair(void){
+    const char *args[]={"demo","kernel"};uint32_t a=0,b=0;RPResult r,s;
+    fs_drop_fds(&fs,&fds);processes.fs=&fs;
+    if(rp_spawn(&processes,app_start,(size_t)(app_end-app_start),2,args,10000000,stream,0,&a)){print("pair failed\r\n");return;}
+    if(rp_spawn(&processes,app_start,(size_t)(app_end-app_start),2,args,10000000,stream,0,&b)){rp_cancel(&processes,a);rp_reap(&processes,a,&r);print("pair failed\r\n");return;}
+    while(rp_tick(&processes,1024)>0){}
+    int x=rp_reap(&processes,a,&r),y=rp_reap(&processes,b,&s);
+    if(x||y||r.state!=RP_EXITED||s.state!=RP_EXITED||r.status||s.status)print("pair failed\r\n");else print("pair exited 0 0\r\n");
+}
+void kmain(uint32_t magic,const uint32_t *info){serial_init();if(magic!=0x2badb002){print("invalid boot\r\n");return;}print("VL-K bare metal\r\n");module(info);run();char line[32];unsigned n=0;print("vlk> ");for(;;){uint8_t c=rx();if(c=='\r'||c=='\n'){tx('\r');tx('\n');line[n]=0;if(eq(line,"run"))run();else if(eq(line,"file"))file();else if(eq(line,"external"))external();else if(eq(line,"pair"))pair();else if(eq(line,"help"))print("help run file external pair halt\r\n");else if(eq(line,"halt")){print("halted\r\n");return;}else if(n)print("unknown command\r\n");n=0;print("vlk> ");}else if(c==8||c==127){if(n){n--;print("\b \b");}}else if(c>=32&&c<127&&n<sizeof(line)-1){line[n++]=(char)c;tx(c);}}}

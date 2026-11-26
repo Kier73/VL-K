@@ -41,6 +41,7 @@ test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32 dist/descriptor.
 	python3 tests/runtime.py
 	python3 tests/descriptors.py
 	python3 tests/structural_files.py
+	python3 tests/rvproc.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf dist/descriptor.rv32
 
@@ -52,8 +53,8 @@ dist/vlk-elf: src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h src/rvbytes.h src/elf_
 	$(CC) $(CFLAGS) src/rv32.c src/rvfs.c src/elf_run.c -o $@
 dist/demo.rv32: examples/rv32/demo.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/demo.c -o $@
-dist/vlk-boot.elf: boot/start.S boot/kernel.c boot/embed.S boot/link.ld boot/module.h src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h src/rvbytes.h dist/demo.rv32 dist/file.rv32 | dist
-	$(CLANG) $(BOOTFLAGS) -Isrc -nostdlib -static -fuse-ld=lld -Wl,-no-pie,-T,boot/link.ld boot/start.S boot/kernel.c boot/embed.S src/rv32.c src/rvfs.c -o $@
+dist/vlk-boot.elf: boot/start.S boot/kernel.c boot/embed.S boot/link.ld boot/module.h src/rvproc.c src/rvproc.h src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h src/rvbytes.h dist/demo.rv32 dist/file.rv32 | dist
+	$(CLANG) $(BOOTFLAGS) -Isrc -nostdlib -static -fuse-ld=lld -Wl,-no-pie,-T,boot/link.ld boot/start.S boot/kernel.c boot/embed.S src/rv32.c src/rvfs.c src/rvproc.c -o $@
 dist/filter.rv32: examples/rv32/filter.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/filter.c -o $@
 dist/abi.rv32: examples/rv32/abi.S examples/rv32/app.ld | dist
