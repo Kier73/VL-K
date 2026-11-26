@@ -249,3 +249,7 @@ The atlas now compiles finite transition laws into [tail/cycle coordinates](docs
 ### Driven computational Grounds
 
 `node tests/driven-ground.mjs` qualifies phase-stable driver specialization and affine continuation of interacting nonlinear register systems. `make test` additionally runs eager source-WASM comparisons. See [driven Ground contract](docs/DRIVEN_GROUNDS.md).
+
+### Procedural application continuity
+
+`node tests/application-ground.mjs` qualifies an interactive rover application's Ground-backed history, process restart, automatic command-boundary capture and alternate continuation. `node js/rover-session.mjs` accepts JSON-line commands. See [PAC-001](docs/PROCEDURAL_APPLICATION_CONTINUITY.md).
