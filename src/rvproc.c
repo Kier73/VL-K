@@ -7,7 +7,12 @@ int rp_spawn(RPKernel *k,const uint8_t *image,size_t n,int argc,const char *cons
     if(i==RP_SLOTS)return -2;
     for(unsigned j=0;j<FS_OPEN;j++)if(!k->fs->opens[j].refs)free++;
     if(free<3)return -2;
-    RPProcess *p=&k->slots[i];if(rv_load(&p->vm,p->ram,image,n,argc,argv))return -3;
+    RPProcess *p=&k->slots[i];
+#ifdef RV_OBJECT_BACKEND
+    if(rv_load_pool(&p->vm,&k->pool,k->scratch,image,n,argc,argv,0,0))return -3;
+#else
+    if(rv_load(&p->vm,p->ram,image,n,argc,argv))return -3;
+#endif
     fs_reset_fds(k->fs,&p->fds);p->vm.process_calls=1;p->parent=0;p->limit=limit;p->io=io;p->ctx=ctx;
     p->result=(RPResult){++k->last_pid,RP_READY,0,0,0};*pid=p->result.pid;return 0;
 }
@@ -42,12 +47,19 @@ static int32_t process_call(RPKernel *k,RPProcess *p,int *replaced){
     RV *v=&p->vm;uint32_t a=v->r[10],b=v->r[11],c=v->r[12];*replaced=0;
     switch(v->r[17]){
     case 172:return (int32_t)p->result.pid;
-    case 59:{if(b&~02000000u)return -22;if(!rv_check(v,a,8,RV_W))return -14;unsigned x=0,y;while(x<FS_FDS&&p->fds.slots[x])x++;for(y=x+1;y<FS_FDS&&p->fds.slots[y];y++){}if(y>=FS_FDS)return -24;int r=fs_pipe(k->fs,&p->fds,&p->fds,x,y);if(r)return r;p->fds.cloexec[x]=p->fds.cloexec[y]=(uint8_t)!!b;uint8_t *out=rv_buffer(v,a,8,1);write32(out,x);write32(out+4,y);return 0;}
+    case 59:{if(b&~02000000u)return -22;if(!rv_check(v,a,8,RV_W))return -14;unsigned x=0,y;while(x<FS_FDS&&p->fds.slots[x])x++;for(y=x+1;y<FS_FDS&&p->fds.slots[y];y++){}if(y>=FS_FDS)return -24;int r=fs_pipe(k->fs,&p->fds,&p->fds,x,y);if(r)return r;p->fds.cloexec[x]=p->fds.cloexec[y]=(uint8_t)!!b;uint8_t out[8];write32(out,x);write32(out+4,y);rv_write_bytes(v,a,out,8);return 0;}
     case 220:{/* Linux clone's fork-like subset: SIGCHLD, original stack, no extra pointers. */
         if(a!=17||b||c||v->r[13]||v->r[14])return -22;
         if(k->last_pid==0x7fffffffu||v->steps+1>=p->limit)return -11;
         unsigned i=0;while(i<RP_SLOTS&&k->slots[i].result.state)i++;if(i==RP_SLOTS)return -11;
-        RPProcess *q=&k->slots[i];if(v->peer)return -11;unsigned shared=rv_fork_memory(&q->vm,q->ram,v);k->forks++;k->shared_pages+=shared;q->vm.r[10]=0;q->vm.pc+=4;q->vm.steps=0;
+        RPProcess *q=&k->slots[i];if(v->peer)return -11;unsigned shared;
+#ifdef RV_OBJECT_BACKEND
+        shared=rv_fork_memory(&q->vm,k->scratch,v);
+#else
+        shared=rv_fork_memory(&q->vm,q->ram,v);
+#endif
+        if(shared==UINT32_MAX)return -11;
+        k->forks++;k->shared_pages+=shared;q->vm.r[10]=0;q->vm.pc+=4;q->vm.steps=0;
         q->fds=p->fds;for(unsigned j=0;j<FS_FDS;j++)if(q->fds.slots[j])k->fs->opens[q->fds.slots[j]-1].refs++;
         q->parent=p->result.pid;q->limit=p->limit-v->steps-1;q->io=p->io;q->ctx=p->ctx;q->result=(RPResult){++k->last_pid,RP_READY,0,0,0};return (int32_t)q->result.pid;}
     case 221:{char name[FS_NAME],args[16][256],env[16][256];const char *argv[16],*envp[16];int argc,envc;int r=string(v,a,name,sizeof(name));if(r)return r;
@@ -58,7 +70,7 @@ static int32_t process_call(RPKernel *k,RPProcess *p,int *replaced){
     case 260:{if((a==0||(a>0x7fffffffu&&a!=UINT32_MAX))||c>1||v->r[13])return -22;if(b&&!rv_check(v,b,4,RV_W))return -14;
         int exists;RPProcess *q=child(k,p,a,&exists);if(!exists)return -10;if(!q)return c?0:FS_BLOCK;
         uint32_t pid=q->result.pid,status=q->result.state==RP_EXITED?q->result.status<<8:q->result.state==RP_TRAPPED?4:9;RPResult ignored;
-        if(b){write32(rv_buffer(v,b,4,1),status);}rp_reap(k,pid,&ignored);return (int32_t)pid;}
+        if(b){uint8_t out[4];write32(out,status);rv_write_bytes(v,b,out,4);}rp_reap(k,pid,&ignored);return (int32_t)pid;}
     default:return -38;
     }
 }

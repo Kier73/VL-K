@@ -4,7 +4,7 @@ CFLAGS := -std=c11 -O2 -Wall -Wextra -Werror
 EXPORTS := vk_abi vk_spawn vk_fork vk_exit vk_observe vk_advance vk_restore vk_value vk_work vk_time vk1_begin vk1_seed vk1_append vk1_run vk1_result vk1_method vk1_work
 WASM_EXPORTS := $(foreach x,$(EXPORTS),-Wl,--export=$(x))
 .PHONY: all test clean
-all: dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-session dist/vlk-elf dist/demo.rv32 dist/file.rv32
+all: dist/vlk-session-objects dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-session dist/vlk-elf dist/demo.rv32 dist/file.rv32
 dist:
 	mkdir -p dist
 dist/vlk.wasm: src/vlk.c src/vlk1.c src/vlk.h | dist
@@ -46,8 +46,9 @@ test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32 dist/descriptor.
 	python3 tests/guest_control.py
 	python3 tests/cow.py
 	python3 tests/rvobjects.py
+	python3 tests/object_runtime.py
 clean:
-	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf dist/descriptor.rv32 dist/vlk-session dist/control.rv32 dist/worker.rv32 dist/shell.rv32 dist/cow.rv32
+	rm -f dist/vlk-session-objects dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf dist/descriptor.rv32 dist/vlk-session dist/control.rv32 dist/worker.rv32 dist/shell.rv32 dist/cow.rv32
 
 RVFLAGS := --target=riscv32-none-elf -march=rv32im -mabi=ilp32 -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -msmall-data-limit=0 -O2 -nostdlib -fuse-ld=lld -Wl,--no-relax,-T,examples/rv32/app.ld
 BOOTFLAGS := --target=i386-none-elf -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -mno-sse -mno-mmx -O2 -Wall -Wextra -Werror
@@ -88,3 +89,7 @@ dist/vlk-session: src/session.c src/rvproc.c src/rvproc.h src/rv32.c src/rv32.h 
 
 dist/cow.rv32: examples/rv32/cow.c examples/rv32/start.S examples/rv32/app.ld | dist
 	$(CLANG) $(RVFLAGS) examples/rv32/start.S examples/rv32/cow.c -o $@
+
+# Experimental alternate runtime: 4 process slots, 4 MiB aggregate backing reservations.
+dist/vlk-session-objects: src/session.c src/rvproc.c src/rvproc.h src/rv32.c src/rv32.h src/rvfs.c src/rvfs.h src/rvbytes.h src/rvobjects.c src/rvobjects.h | dist
+	$(CC) $(CFLAGS) -DRV_OBJECT_BACKEND -DRO_OBJECTS=1024 -DRP_SLOTS=4 src/session.c src/rvproc.c src/rv32.c src/rvfs.c src/rvobjects.c -o $@

@@ -15,3 +15,22 @@ static void assign(ROPool *p,ROSpace *s,unsigned page,const uint8_t *data){unsig
     if(tag){for(i=0;i<tag;i++)o->pattern[i]=data[i];}else{unsigned j=0;while(p->used[j])j++;p->used[j]=1;o->dense=(uint16_t)j;p->dense++;if(p->dense>p->peak_dense)p->peak_dense=p->dense;for(i=0;i<RO_PAGE;i++)p->data[j][i]=data[i];}s->id[page]=(uint16_t)id;
 }
 int ro_write(ROPool *p,ROSpace *s,uint32_t a,const uint8_t *in,uint32_t n){if(!valid(s,a,n))return -1;uint8_t scratch[RO_PAGE];while(n){unsigned page=a/RO_PAGE,offset=a%RO_PAGE,take=RO_PAGE-offset;if(take>n)take=n;unsigned id=s->id[page];int changed=0;for(unsigned i=0;i<take;i++)if(in[i]!=byte(p,id,offset+i)){changed=1;break;}if(changed){for(unsigned i=0;i<RO_PAGE;i++)scratch[i]=byte(p,id,i);for(unsigned i=0;i<take;i++)scratch[offset+i]=in[i];assign(p,s,page,scratch);}a+=take;in+=take;n-=take;}return 0;}
+
+/* Frequent stores never scan for structure. A changed non-dense or shared page
+ * becomes dense once; unique dense pages are updated directly. */
+int ro_store(ROPool *p,ROSpace *s,uint32_t a,const uint8_t *in,uint32_t n){
+    if(!valid(s,a,n))return -1;
+    while(n){unsigned page=a/RO_PAGE,at=a%RO_PAGE,take=RO_PAGE-at;if(take>n)take=n;
+        unsigned id=s->id[page];ROObject *o=id?&p->objects[id-1]:0;unsigned i=0;
+        while(i<take&&in[i]==byte(p,id,at+i))i++;
+        if(i<take){
+            if(!o||o->refs!=1||o->period){
+                unsigned slot=0;while(p->used[slot])slot++;
+                for(unsigned j=0;j<RO_PAGE;j++)p->data[slot][j]=byte(p,id,j);
+                if(!o||o->refs!=1){if(o){release(p,id);p->copies++;}for(id=1;p->objects[id-1].refs;id++){}p->live++;o=&p->objects[id-1];s->id[page]=(uint16_t)id;}
+                o->refs=1;o->period=0;o->dense=(uint16_t)slot;p->used[slot]=1;p->dense++;if(p->dense>p->peak_dense)p->peak_dense=p->dense;
+            }
+            for(unsigned j=0;j<take;j++)p->data[o->dense][at+j]=in[j];
+        }a+=take;in+=take;n-=take;
+    }return 0;
+}

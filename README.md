@@ -179,3 +179,7 @@ Fork shares mapped pages without copying payload bytes; writes preserve independ
 ## General page-object memory (component qualification)
 
 `python3 tests/rvobjects.py` qualifies shared zero/periodic/dense page objects across eight address spaces and reserves worst-case private backing before admission. See [page-object contract](docs/PAGE_OBJECTS.md). The live RV32 interpreter still uses the established pairwise COW backend.
+
+## Selectable structural page execution
+
+`make all dist/shell.rv32 dist/filter.rv32` then `dist/vlk-session-objects dist/shell.rv32 demo=dist/demo.rv32 filter=dist/filter.rv32` runs the existing compiled guest shell through the shared page-object backend. See [object runtime contract](docs/OBJECT_RUNTIME.md). The default backend remains unchanged in selection.
