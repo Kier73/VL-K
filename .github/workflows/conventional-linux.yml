@@ -18,7 +18,7 @@ permissions:
 jobs:
   linux-reference:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +33,7 @@ jobs:
           node compat/unkernel/disk-test.mjs
           node compat/unkernel/ground-test.mjs
           python3 compat/unkernel/ground_history_test.py
+          node compat/unkernel/history-device-test.mjs
       - name: Verify and extract pinned upstream release
         run: bash compat/unkernel/prepare.sh
       - name: Run actual Linux guest acceptance
@@ -46,3 +47,6 @@ jobs:
           truncate -s 16M /tmp/vlk-ext4.img
           mke2fs -q -t ext4 -F /tmp/vlk-ext4.img
           timeout 600 node compat/unkernel/ground-linux.mjs /tmp/vlk-ext4.img /tmp/vlk-ext4.ground
+
+      - name: Historical coordinate Ground through Linux ext4
+        run: timeout 600 node compat/unkernel/history-linux.mjs /tmp/vlk-ext4.img /tmp/vlk-history.sqlite

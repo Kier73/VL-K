@@ -207,3 +207,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Historical coordinate Grounds
 
 `python3 compat/unkernel/ground_history_test.py` exercises a persistent Merkle coordinate index with the unchanged E-CPU PageGroundBacking, historical observations, branching and compare-and-swap publication. See [coordinate Ground contract](docs/COORDINATE_GROUNDS.md). Linux device binding remains pending.
+
+### Historical block pathway
+
+`node compat/unkernel/history-device-test.mjs` exercises the asynchronous BlockDevice adapter over a persistent Python Ground interpreter using native E-CPU page backing. See [historical pathway contract](docs/HISTORICAL_PATHWAY.md). Linux ext4 branch qualification remains pending.
