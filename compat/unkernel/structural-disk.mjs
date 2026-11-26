@@ -56,6 +56,8 @@ export class StructuralDisk {
     }
     if (index !== -1) this.#classify(index, bytes);
   }
+  // Detached representation records; no caller may mutate live backing.
+  records() { return [...this.#pages].sort((a,b) => a[0]-b[0]).map(([i,p]) => [i,p.slice()]); }
   stats() {
     let periodic = 0, dense = 0, payload = 0;
     for (const p of this.#pages.values()) { payload += p.length; if (p.length === PAGE) dense++; else periodic++; }

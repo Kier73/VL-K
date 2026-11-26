@@ -18,7 +18,7 @@ permissions:
 jobs:
   linux-reference:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,10 +29,19 @@ jobs:
           git submodule update --init --depth 1 vendor/unkernel
           test "$(git -C vendor/unkernel rev-parse HEAD)" = fd204d3130309c45ce51795c753c3b8ec1eaddfd
       - name: Structural disk oracle
-        run: node compat/unkernel/disk-test.mjs
+        run: |
+          node compat/unkernel/disk-test.mjs
+          node compat/unkernel/ground-test.mjs
       - name: Verify and extract pinned upstream release
         run: bash compat/unkernel/prepare.sh
       - name: Run actual Linux guest acceptance
         run: |
           timeout 300 node compat/unkernel/smoke.mjs alpine
           timeout 300 node compat/unkernel/smoke.mjs debian
+
+      - name: Durable Ground through Linux ext4
+        run: |
+          command -v mke2fs || (sudo apt-get update && sudo apt-get install -y e2fsprogs)
+          truncate -s 16M /tmp/vlk-ext4.img
+          mke2fs -q -t ext4 -F /tmp/vlk-ext4.img
+          timeout 600 node compat/unkernel/ground-linux.mjs /tmp/vlk-ext4.img /tmp/vlk-ext4.ground

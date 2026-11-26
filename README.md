@@ -199,3 +199,7 @@ A separate pinned unkernel substrate is being qualified as the conventional appl
 ### Full upstream source and conventional launch
 
 Initialize `git submodule update --init vendor/unkernel` for the pinned complete source. `bash compat/unkernel/prepare.sh` verifies the package, bundled kernel, Alpine and Debian images; `bash compat/unkernel/run.sh alpine` (or `debian`) launches the upstream CLI on Node 24+ with JSPI. `node compat/unkernel/disk-test.mjs` qualifies the new structural block-device component independently. See [bootstrap and evidence](docs/CONVENTIONAL_BOOTSTRAP.md). Actual guest boot remains pending CI.
+
+### Virtual Layer integration contract
+
+[VL terminology and durable block Ground](docs/VL_CONTRACT.md). `node compat/unkernel/ground-test.mjs` qualifies persistent structural encodings and process-loss recovery independently of the Linux scaffold. The Linux ext4 acceptance remains pending runtime qualification.
