@@ -26,6 +26,6 @@ for(const {l,t} of families){const cert=compileDependencies(l,32,t);stats.push({
 // The unobserved clock has period 2^32. Full-state contraction is deliberately refused.
 assert(compileDependencies(same(swap),32,[0,1,2,3]).paths.every(p=>p.bound===null));
 await assert.rejects(observeDependencies(counted,dependencyIntention(same(swap),32,[0,1,2,3],[1,2,3,4],max)),/no sufficient/);
-const i=dependencyIntention(mixed,32,targets,[1,3,9,2],max),b=dependencyBindings(counted)[1];await assert.rejects(realize(i,[{...b,run:q=>({...b.run(q),value:[0,0,0]})}],2000003),/no sufficient/);
+const i=dependencyIntention(same(swap),32,targets,[1,3,9,2],max),b=dependencyBindings(counted)[1];await assert.rejects(realize(i,[{...b,run:q=>({...b.run(q),value:[0,0,0]})}],2000003),e=>e.receipt.trace.some(t=>t.status==='admission-refused'));
 assert.throws(()=>dependencyIntention(mixed,32,[0,0],[0,0,0,0],1n));
 console.log(JSON.stringify({moderate,huge,refused,relations,wasm,stats}));
