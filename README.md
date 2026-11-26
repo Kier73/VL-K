@@ -163,3 +163,7 @@ All guest file objects now use exact zero, periodic or dense page backing. `vlk 
 ## Cooperative guest processes
 
 The shared C scheduler manages two independently identified RV32 guests with per-process instruction budgets, private memory and descriptor tables, and shared structural file storage. `python3 tests/rvproc.py` qualifies the lifecycle through actual compiled guests; the freestanding monitor provides `pair` (boot validation pending). See [process contract](docs/GUEST_PROCESSES.md).
+
+## Guest communication and blocked continuations
+
+The shared kernel scheduler connects compiled guests through bounded pipes, suspends blocked read/write instructions without retiring them, and wakes on data, capacity, EOF or peer closure. `python3 tests/rvpipe.py` tests five actual compiled pipelines. See [guest pipe contract](docs/GUEST_PIPES.md).
