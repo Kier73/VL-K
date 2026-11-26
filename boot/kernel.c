@@ -3,7 +3,7 @@
 #include "rvproc.h"
 static RPKernel processes;
 static RV vm;static RVFS fs;static RVFds fds;static uint8_t ram[RV_SIZE];
-extern const uint8_t app_start[],app_end[],file_start[],file_end[],kernel_end[];
+extern const uint8_t app_start[],app_end[],file_start[],file_end[],kernel_end[],shell_start[],shell_end[],filter_start[],filter_end[];
 static const uint8_t *external_image;static uint32_t external_size;
 static void out(uint16_t p,uint8_t b){__asm__ volatile("outb %0,%1"::"a"(b),"Nd"(p));}
 static uint8_t in(uint16_t p){uint8_t b;__asm__ volatile("inb %1,%0":"=a"(b):"Nd"(p));return b;}
@@ -39,4 +39,14 @@ static void pair(void){
     int x=rp_reap(&processes,a,&r),y=rp_reap(&processes,b,&s);
     if(x||y||r.state!=RP_EXITED||s.state!=RP_EXITED||r.status||s.status)print("pair failed\r\n");else print("pair exited 0 0\r\n");
 }
-void kmain(uint32_t magic,const uint32_t *info){serial_init();if(magic!=0x2badb002){print("invalid boot\r\n");return;}print("VL-K bare metal\r\n");module(info);run();char line[32];unsigned n=0;print("vlk> ");for(;;){uint8_t c=rx();if(c=='\r'||c=='\n'){tx('\r');tx('\n');line[n]=0;if(eq(line,"run"))run();else if(eq(line,"file"))file();else if(eq(line,"external"))external();else if(eq(line,"pair"))pair();else if(eq(line,"help"))print("help run file external pair halt\r\n");else if(eq(line,"halt")){print("halted\r\n");return;}else if(n)print("unknown command\r\n");n=0;print("vlk> ");}else if(c==8||c==127){if(n){n--;print("\b \b");}}else if(c>=32&&c<127&&n<sizeof(line)-1){line[n++]=(char)c;tx(c);}}}
+static void guest_shell(void){
+    const char *args[]={"shell"};uint32_t pid;RPResult r;
+    fs_drop_fds(&fs,&fds);processes.fs=&fs;
+    if(!processes.images[0].name&&(rp_register(&processes,"demo",app_start,(size_t)(app_end-app_start))||rp_register(&processes,"filter",filter_start,(size_t)(filter_end-filter_start)))){print("guest shell registration failed\r\n");return;}
+    if(rp_spawn(&processes,shell_start,(size_t)(shell_end-shell_start),1,args,100000000,stream,0,&pid)){print("guest shell failed\r\n");return;}
+    while(rp_tick(&processes,1024)>0){}
+    int ok=!rp_reap(&processes,pid,&r)&&r.state==RP_EXITED&&!r.status;
+    for(unsigned i=0;i<RP_SLOTS;i++)if(processes.slots[i].result.state){uint32_t other=processes.slots[i].result.pid;rp_cancel(&processes,other);rp_reap(&processes,other,&r);ok=0;}
+    print(ok?"guest shell exited 0\r\n":"guest shell failed\r\n");
+}
+void kmain(uint32_t magic,const uint32_t *info){serial_init();if(magic!=0x2badb002){print("invalid boot\r\n");return;}print("VL-K bare metal\r\n");module(info);run();char line[32];unsigned n=0;print("vlk> ");for(;;){uint8_t c=rx();if(c=='\r'||c=='\n'){tx('\r');tx('\n');line[n]=0;if(eq(line,"run"))run();else if(eq(line,"file"))file();else if(eq(line,"external"))external();else if(eq(line,"pair"))pair();else if(eq(line,"guest"))guest_shell();else if(eq(line,"help"))print("help run file external pair guest halt\r\n");else if(eq(line,"halt")){print("halted\r\n");return;}else if(n)print("unknown command\r\n");n=0;print("vlk> ");}else if(c==8||c==127){if(n){n--;print("\b \b");}}else if(c>=32&&c<127&&n<sizeof(line)-1){line[n++]=(char)c;tx(c);}}}

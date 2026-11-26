@@ -167,3 +167,7 @@ The shared C scheduler manages two independently identified RV32 guests with per
 ## Guest communication and blocked continuations
 
 The shared kernel scheduler connects compiled guests through bounded pipes, suspends blocked read/write instructions without retiring them, and wakes on data, capacity, EOF or peer closure. `python3 tests/rvpipe.py` tests five actual compiled pipelines. See [guest pipe contract](docs/GUEST_PIPES.md).
+
+## Guest-directed sessions
+
+`make all dist/shell.rv32 dist/filter.rv32` then `vlk session dist/shell.rv32 demo=dist/demo.rv32 filter=dist/filter.rv32`. Inside the guest shell use `run demo kernel`, `send abc | filter Q`, or `quit`. See [guest-directed process contract](docs/GUEST_CONTROL.md). The freestanding monitor also provides `guest` (boot validation pending).

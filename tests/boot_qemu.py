@@ -19,12 +19,17 @@ def command(line,marker):
 try:
     expect(b'vlk> ')
     assert b'VL-K bare metal' in transcript and b'external module available' in transcript and b'demo 54c69d41\n' in transcript and b'guest exited 0' in transcript,bytes(transcript)
-    command(b'help',b'help run file external pair halt\r\n');expect(b'vlk> ')
+    command(b'help',b'help run file external pair guest halt\r\n');expect(b'vlk> ')
     command(b'run',b'guest exited 0');expect(b'vlk> ');assert b'demo 54c69d41\n' in transcript
     command(b'file',b'count 01\n');expect(b'vlk> ')
     command(b'file',b'count 02\n');expect(b'vlk> ')
     command(b'external',b'external exited 0');expect(b'vlk> ');assert b'runtime ABI passed\n' in transcript
     command(b'pair',b'pair exited 0 0');expect(b'vlk> ');assert transcript.count(b'demo 54c69d41\n')==2
+    command(b'guest',b'guest> ')
+    command(b'run demo kernel',b'demo 54c69d41\n');expect(b'guest> ')
+    command(b'run missing',b'failed\n');expect(b'guest> ')
+    command(b'send abc | filter Q',b'032ok\n');expect(b'guest> ')
+    command(b'quit',b'guest shell exited 0\r\n');expect(b'vlk> ')
     command(b'halt',b'halted\r\n')
     print('QEMU Multiboot entry, real serial shell, repeated RV32 ELF execution, external ELF module, halt command passed')
 finally:

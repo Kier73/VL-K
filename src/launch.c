@@ -11,7 +11,7 @@ static int failure(const char *name) {
     return code==ENOENT?127:126;
 }
 int main(int argc,char **argv) {
-    const char *usage="usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk guest PROGRAM [OPTIONS] | vlk debug PROGRAM [--restore FILE] | vlk app PROGRAM INPUT AUTHORITY SINK JOB | vlk pack PROGRAM IMAGE | vlk elf FILE [ARG ...] | vlk refine TABLE | vlk ground TABLE | vlk PROGRAM [COUNT]";
+    const char *usage="usage: vlk run COMMAND [ARG ...] | vlk shell [SHELL ARG ...] | vlk guest PROGRAM [OPTIONS] | vlk debug PROGRAM [--restore FILE] | vlk app PROGRAM INPUT AUTHORITY SINK JOB | vlk pack PROGRAM IMAGE | vlk session ROOT [NAME=ELF ...] | vlk elf FILE [ARG ...] | vlk refine TABLE | vlk ground TABLE | vlk PROGRAM [COUNT]";
     if(argc==1 || (argc==2 && (!strcmp(argv[1],"-h") || !strcmp(argv[1],"--help")))) {
         fprintf(argc==1?stderr:stdout,"%s\n",usage);return argc==1?2:0;
     }

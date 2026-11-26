@@ -4,6 +4,7 @@ static void put(uint8_t *p,unsigned n,uint32_t v){for(unsigned i=0;i<n;i++)p[i]=
 static uint32_t sx(uint32_t v,unsigned n){uint32_t bit=1u<<(n-1);return (v^bit)-bit;}
 static int span(uint32_t a,uint32_t n){return a<=RV_SIZE && n<=RV_SIZE-a;}
 static int access(RV *v,uint32_t a,uint32_t n,unsigned flags){if(!span(a,n))return 0;if(!n)return 1;for(uint32_t p=a/RV_PAGE;p<=(a+n-1)/RV_PAGE;p++)if((v->pages[p]&flags)!=flags)return 0;return 1;}
+int rv_check(RV *v,uint32_t a,uint32_t n,unsigned flags){return access(v,a,n,flags);}
 static void zero(uint8_t *p,size_t n){for(size_t i=0;i<n;i++)p[i]=0;}
 static int load_image(RV *v,uint8_t *mem,const uint8_t *f,size_t len,int argc,const char *const *argv,int envc,const char *const *envp){
     if(len<52||get(f,4)!=0x464c457f||f[4]!=1||f[5]!=1||f[6]!=1||get(f+16,2)!=2||get(f+18,2)!=243||get(f+20,4)!=1||get(f+36,4)!=0||get(f+40,2)!=52||get(f+42,2)!=32||argc<0||argc>64||envc<0||envc>64)return -1;
@@ -92,7 +93,7 @@ int rv_run(RV *v,uint32_t budget,rv_io io,void *ctx,RVFS *fs,RVFds *fds){
         case 0x13:switch(f){case 0:z=a+imm;break;case 2:z=slt(a,imm);break;case 3:z=a<imm;break;case 4:z=a^imm;break;case 6:z=a|imm;break;case 7:z=a&imm;break;case 1:if(h)return -3;z=a<<t;break;case 5:if(h!=0&&h!=32)return -3;z=h?sra(a,t):a>>t;break;}break;
         case 0x33:if(h==1){switch(f){case 0:z=a*b;break;case 1:z=(uint32_t)((uint64_t)((int64_t)(int32_t)a*(int64_t)(int32_t)b)>>32);break;case 2:z=(uint32_t)((uint64_t)((int64_t)(int32_t)a*(int64_t)b)>>32);break;case 3:z=(uint32_t)(((uint64_t)a*b)>>32);break;case 4:z=!b?~0u:(a==0x80000000u&&b==~0u)?a:(uint32_t)((int32_t)a/(int32_t)b);break;case 5:z=b?a/b:~0u;break;case 6:z=!b?a:(a==0x80000000u&&b==~0u)?0:(uint32_t)((int32_t)a%(int32_t)b);break;case 7:z=b?a%b:a;break;}}else {if(h&&!(h==32&&(f==0||f==5)))return -3;switch(f){case 0:z=h?a-b:a+b;break;case 1:z=a<<(b&31);break;case 2:z=slt(a,b);break;case 3:z=a<b;break;case 4:z=a^b;break;case 5:z=h?sra(a,b&31):a>>(b&31);break;case 6:z=a|b;break;case 7:z=a&b;break;}}break;
         case 0x0f:if(f!=0)return -3;wr=0;break;
-        case 0x73:if(i!=0x73)return -3;z=(uint32_t)syscall(v,io,ctx,fs,fds);if(z==(uint32_t)FS_BLOCK&&(v->r[17]==63||v->r[17]==64)){int stream;if(!fs_access(fs,fds,v->r[10],v->r[17]==64,&stream)&&stream<0)return 2;}d=10;break;
+        case 0x73:if(i!=0x73)return -3;if(v->process_calls&&(v->r[17]==59||v->r[17]==172||v->r[17]==220||v->r[17]==221||v->r[17]==260))return 3;z=(uint32_t)syscall(v,io,ctx,fs,fds);if(z==(uint32_t)FS_BLOCK&&(v->r[17]==63||v->r[17]==64)){int stream;if(!fs_access(fs,fds,v->r[10],v->r[17]==64,&stream)&&stream<0)return 2;}d=10;break;
         default:return -3;
         }
         if(next&3)return -2;
