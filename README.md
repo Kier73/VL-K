@@ -203,3 +203,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Virtual Layer integration contract
 
 [VL terminology and durable block Ground](docs/VL_CONTRACT.md). `node compat/unkernel/ground-test.mjs` qualifies persistent structural encodings and process-loss recovery independently of the Linux scaffold. The Linux ext4 acceptance remains pending runtime qualification.
+
+### Historical coordinate Grounds
+
+`python3 compat/unkernel/ground_history_test.py` exercises a persistent Merkle coordinate index with the unchanged E-CPU PageGroundBacking, historical observations, branching and compare-and-swap publication. See [coordinate Ground contract](docs/COORDINATE_GROUNDS.md). Linux device binding remains pending.
