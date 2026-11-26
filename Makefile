@@ -45,6 +45,7 @@ test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32 dist/descriptor.
 	python3 tests/rvpipe.py
 	python3 tests/guest_control.py
 	python3 tests/cow.py
+	python3 tests/rvobjects.py
 clean:
 	rm -f dist/vlk.wasm dist/libvlk.so dist/vlk dist/vlk-elf dist/demo.rv32 dist/filter.rv32 dist/abi.rv32 dist/file.rv32 dist/runtime.rv32 dist/vlk-boot.elf dist/descriptor.rv32 dist/vlk-session dist/control.rv32 dist/worker.rv32 dist/shell.rv32 dist/cow.rv32
 

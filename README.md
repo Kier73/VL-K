@@ -175,3 +175,7 @@ The shared kernel scheduler connects compiled guests through bounded pipes, susp
 ## Structural process memory
 
 Fork shares mapped pages without copying payload bytes; writes preserve independent guest observations through exact copy-on-write. `make dist/cow.rv32 && python3 tests/cow.py` exercises compiled guest forks and an eager byte oracle. See [copy-on-write contract](docs/COPY_ON_WRITE.md).
+
+## General page-object memory (component qualification)
+
+`python3 tests/rvobjects.py` qualifies shared zero/periodic/dense page objects across eight address spaces and reserves worst-case private backing before admission. See [page-object contract](docs/PAGE_OBJECTS.md). The live RV32 interpreter still uses the established pairwise COW backend.
