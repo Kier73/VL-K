@@ -195,3 +195,7 @@ The guest shell accepts `install NAME SIZE` followed by exactly SIZE binary byte
 ## Conventional Linux compatibility track
 
 A separate pinned unkernel substrate is being qualified as the conventional application environment, preserving the original VL-K research kernel. See [capability comparison and adoption roadmap](docs/CONVENTIONAL_SUBSTRATE.md). The first Linux guest acceptance gate is `bash compat/unkernel/prepare.sh` then `node compat/unkernel/smoke.mjs` (Node 24+ with JSPI; runtime qualification pending).
+
+### Full upstream source and conventional launch
+
+Initialize `git submodule update --init vendor/unkernel` for the pinned complete source. `bash compat/unkernel/prepare.sh` verifies the package, bundled kernel, Alpine and Debian images; `bash compat/unkernel/run.sh alpine` (or `debian`) launches the upstream CLI on Node 24+ with JSPI. `node compat/unkernel/disk-test.mjs` qualifies the new structural block-device component independently. See [bootstrap and evidence](docs/CONVENTIONAL_BOOTSTRAP.md). Actual guest boot remains pending CI.

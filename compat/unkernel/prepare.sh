@@ -7,14 +7,17 @@ if [[ -e "$out" ]]; then echo "Remove $out before preparing a fresh verified rel
 mkdir -p dist
 stage=$(mktemp -d dist/.unkernel-compat.XXXXXX)
 trap 'rm -rf "$stage"' EXIT
-for file in unkernel.tgz alpine.erofs; do
+for file in unkernel.tgz alpine.erofs debian.erofs; do
   curl --fail --location --silent --show-error --connect-timeout 20 --max-time 300 "$base/$file" -o "$stage/$file"
 done
 (cd "$stage" && sha256sum -c <<'SUMS'
 0970d262dab8d584a162e0daec8e9a0a7dcd5212a81bf51f2c6323d5a4eabcf1  unkernel.tgz
 4253fdcaf3fe289f6a48eb565b5ca1eb43e147e6b9d9985ffbca865b3984a9a8  alpine.erofs
+18e863fd85a63b26f1b017ad76f560f169e8dde74619f0378f72bfaae22db30d  debian.erofs
 SUMS
 )
 tar -xzf "$stage/unkernel.tgz" -C "$stage"
+(cd "$stage" && echo 'b6dc29bcb6980f6994f5845d16703d6f214f5efbccd55bd76163490ccf6938b7  package/dist/unkernel.wasm' | sha256sum -c)
 test -f "$stage/package/dist/node.mjs"
+test -f "$stage/package/dist/cli.mjs"
 mv "$stage" "$out"
