@@ -219,3 +219,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Authenticated Ground observation
 
 `python3 compat/unkernel/remote-observer-test.py` qualifies read-only TLS observation and interpreter replacement with detached coordinate verification. The native E-CPU transport adapter is separately gated in CI. See [authenticated observation contract](docs/AUTHENTICATED_OBSERVATIONS.md).
+
+### Observation-realized block projection
+
+`node compat/unkernel/observation-device-test.mjs` exercises a read-only conventional block ABI over verified historical witnesses, certified zero subtrees, bounded cache and local/TLS realization fallback. See [observation realization contract](docs/OBSERVATION_REALIZATION.md).
