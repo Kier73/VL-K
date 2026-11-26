@@ -191,3 +191,7 @@ The guest shell accepts `install NAME SIZE` followed by exactly SIZE binary byte
 ## Guest-hosted compiler
 
 `make all dist/shell.rv32 dist/compiler.rv32` then `./dist/vlk session dist/shell.rv32 cc=dist/compiler.rv32`. Inside the guest, `send in,2,add,out | cc generated` creates a new RV32 ELF; `send A | ./generated` executes it and emits C. See [compiler contract](docs/GUEST_COMPILER.md).
+
+## Conventional Linux compatibility track
+
+A separate pinned unkernel substrate is being qualified as the conventional application environment, preserving the original VL-K research kernel. See [capability comparison and adoption roadmap](docs/CONVENTIONAL_SUBSTRATE.md). The first Linux guest acceptance gate is `bash compat/unkernel/prepare.sh` then `node compat/unkernel/smoke.mjs` (Node 24+ with JSPI; runtime qualification pending).

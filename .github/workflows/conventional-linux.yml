@@ -1,0 +1,26 @@
+name: Conventional Linux substrate qualification
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'compat/unkernel/**'
+      - '.github/workflows/conventional-linux.yml'
+  pull_request:
+    paths:
+      - 'compat/unkernel/**'
+      - '.github/workflows/conventional-linux.yml'
+permissions:
+  contents: read
+jobs:
+  linux-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and extract pinned upstream release
+        run: bash compat/unkernel/prepare.sh
+      - name: Run actual Linux guest acceptance
+        run: timeout 300 node compat/unkernel/smoke.mjs

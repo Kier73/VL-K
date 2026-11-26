@@ -1,4 +1,7 @@
-# Production roadmap — general application hosting
+# Production roadmap — original kernel track
+
+**Update:** this is the original-kernel roadmap from K3.1, retained as a historical research plan. For current conventional product strategy, reviewed against unkernel at K3.2.10, see [conventional substrate](CONVENTIONAL_SUBSTRATE.md). Adopt the full Linux baseline first while retaining original-kernel experiments and qualifying bottom-up substitutions.
+
 
 Baseline: K3.1, commit 0c1122b4f1d3b5441f8041000d09600d82df3be4. The goal is an independently bootable, general-purpose operating environment with conventional application interfaces, capable of hosting mathematical discovery and interactive learning. Correct conventional execution is the baseline; Virtual Layer optimization is an optional realization method. No application must require a successful Ground discovery to execute. General-purpose means support for arbitrary algorithms within available resources and supported ABI profiles, not every existing architecture or device by default.
 
