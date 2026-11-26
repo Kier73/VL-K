@@ -215,3 +215,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Portable coordinate witnesses
 
 `node compat/unkernel/coordinate-witness-test.mjs` qualifies independent observation verification, durable store identities and branch seals through the historical pathway. See [portable Ground contract](docs/PORTABLE_COORDINATE_WITNESSES.md).
+
+### Authenticated Ground observation
+
+`python3 compat/unkernel/remote-observer-test.py` qualifies read-only TLS observation and interpreter replacement with detached coordinate verification. The native E-CPU transport adapter is separately gated in CI. See [authenticated observation contract](docs/AUTHENTICATED_OBSERVATIONS.md).
