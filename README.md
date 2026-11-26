@@ -233,3 +233,7 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 `make dist/vlk.wasm && node tests/ground-atlas.mjs` qualifies a retained finite residue law for a nonlinear WASM register program, with independent source-law admission and new temporal intentions after restart. See [Ground atlas contract](docs/GROUND_ATLAS.md).
 
 The atlas now compiles finite transition laws into [tail/cycle coordinates](docs/FINITE_COORDINATES.md). `node tests/finite-coordinate.mjs` qualifies the index on four complete graphs, with no WASM dependency for that test.
+
+### Layered contracting Grounds
+
+`make dist/vlk.wasm && node tests/layered-realization.mjs` qualifies a full-u32 parity-selected family of nonlinear source laws through the shared dispatcher, with algebraic admission and no exhaustive transition table. See [layered Ground contract](docs/LAYERED_CONTRACTION.md).

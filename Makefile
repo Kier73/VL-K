@@ -19,6 +19,7 @@ test: all boot dist/filter.rv32 dist/abi.rv32 dist/runtime.rv32 dist/descriptor.
 	node tests/realization.mjs
 	node tests/ground-atlas.mjs
 	node tests/finite-coordinate.mjs
+	node tests/layered-realization.mjs
 	node tests/k1.mjs
 	python3 tests/k1_native.py
 	node tests/adapter.mjs
