@@ -1,5 +1,7 @@
 # C0.9 — Persistent nonlinear observation Ground atlas
 
+**C0.10 update:** the original dense 64-level index described below has been replaced by [finite coordinates](FINITE_COORDINATES.md). Retained JSON schema and source admission remain unchanged. The per-query reservation remains conservative; the current admission recomputes coordinate selection against the checked private index.
+
 GroundAtlas retains a source-qualified transition law rather than cached query results. Reuses the original VL-K WASM kernel and shared realization dispatcher directly. Reviewed E-CPU ai_ground_atlas.py (catalogued_only, separate admission), VL-I evidence_adaptive_ground.py (source-qualified candidate laws), and VL-64 quotient_ground.py (observer-preserving quotient); those modules are not imported here because their current domains and runtimes differ. Existing E-CPU storage integration is unchanged.
 
 ## Admitted domain

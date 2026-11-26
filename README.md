@@ -231,3 +231,5 @@ Initialize `git submodule update --init vendor/unkernel` for the pinned complete
 ### Persistent Ground atlas
 
 `make dist/vlk.wasm && node tests/ground-atlas.mjs` qualifies a retained finite residue law for a nonlinear WASM register program, with independent source-law admission and new temporal intentions after restart. See [Ground atlas contract](docs/GROUND_ATLAS.md).
+
+The atlas now compiles finite transition laws into [tail/cycle coordinates](docs/FINITE_COORDINATES.md). `node tests/finite-coordinate.mjs` qualifies the index on four complete graphs, with no WASM dependency for that test.

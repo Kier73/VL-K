@@ -3,6 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync,writeFileSync,renameSync,statSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {realize} from './realization.mjs';
+import {compileCoordinates} from './finite-coordinate.mjs';
 const VERSION='vlk.residue-ground.v1', sha=x=>createHash('sha256').update(x).digest('hex');
 const u32=x=>Number.isInteger(x)&&x>=0&&x<=0xffffffff;
 function source(program,bits){
@@ -25,17 +26,17 @@ export class GroundAtlas {
   }
   #admit(program,bits,table){
     const p=source(program,bits),n=2**bits,id=key(p,bits);if(!Array.isArray(table)||table.length!==n||table.some((v,x)=>v!==step(p,x,bits)))throw Error('transition law contradiction');
-    const powers=[Uint16Array.from(table)];for(let k=1;k<64;k++){const prev=powers[k-1],next=new Uint16Array(n);for(let x=0;x<n;x++)next[x]=prev[prev[x]];powers.push(next);}
+    const coordinates=compileCoordinates(table);
     if(!this.#laws.has(id)&&this.#laws.size>=16)throw Error('atlas capacity');
-    this.#laws.set(id,{program:p,bits,table:[...table],powers});return id;
+    this.#laws.set(id,{program:p,bits,table:[...table],coordinates});return id;
   }
+  stats(id){const law=this.#laws.get(id);if(!law)throw Error('unknown law');return law.coordinates.stats();}
   save(path){const data=JSON.stringify({version:VERSION,laws:[...this.#laws.values()].map(({program,bits,table})=>({program,bits,table}))});const tmp=path+'.'+randomUUID()+'.tmp';writeFileSync(tmp,data,{flag:'wx',mode:0o600});renameSync(tmp,path);return Buffer.byteLength(data);}
   static open(path){if(statSync(path).size>512*1024)throw Error('atlas size');const a=new GroundAtlas(),d=JSON.parse(readFileSync(path,'utf8'));if(d.version!==VERSION||!Array.isArray(d.laws)||d.laws.length>16)throw Error('atlas format');for(const l of d.laws)a.#admit(l.program,l.bits,l.table);return a;}
   bindings(kernel){
     const resolve=i=>{if(i.domain!==VERSION)return null;const p=source(i.program,i.bits);if(key(p,i.bits)!==i.source||!u32(i.seed)||!/^([0]|[1-9][0-9]{0,19})$/.test(i.steps)||BigInt(i.steps)>=1n<<64n)throw Error('invalid intention');return this.#laws.get(i.source);};
-    const traverse=(i,law)=>{let x=i.seed%2**i.bits,n=BigInt(i.steps),k=0;const hops=[];while(n){if(n&1n){const y=law.powers[k][x];hops.push([k,x,y]);x=y;}n>>=1n;k++;}return {value:x,hops};};
     return [{id:'wasm-reference-residue',probe:i=>{if(i.domain!==VERSION)return null;resolve(i);const work=BigInt(i.steps)*BigInt(i.program.length);return work>1000000n?null:2*Number(work)+1;},run:(i,reserved)=>kernel.evaluate({seed:[i.seed,0,0,0],program:i.program,steps:i.steps,budget:Math.floor((reserved-1)/2),mode:'reference'}),admit:(i,r)=>{if(r.status!==0)throw Error('reference failed');let x=i.seed%2**i.bits;for(let t=0n;t<BigInt(i.steps);t++)x=step(i.program,x,i.bits);if(r.registers[0]%2**i.bits!==x)throw Error('reference contradiction');return x;}},
-      {id:'atlas-residue',probe:i=>resolve(i)?130:null,run:i=>traverse(i,resolve(i)),admit:(i,r)=>{const law=resolve(i);let x=i.seed%2**i.bits,n=BigInt(i.steps),k=0,j=0;while(n){if(n&1n){const h=r.hops[j++];if(!h||h[0]!==k||h[1]!==x||h[2]!==law.powers[k][x])throw Error('invalid jump witness');x=h[2];}n>>=1n;k++;}if(j!==r.hops.length||r.value!==x)throw Error('invalid observation');return x;}}];
+      {id:'atlas-residue',probe:i=>resolve(i)?130:null,run:i=>resolve(i).coordinates.at(i.seed%2**i.bits,BigInt(i.steps)),admit:(i,r)=>{const law=resolve(i);if(r!==law.coordinates.at(i.seed%2**i.bits,BigInt(i.steps)))throw Error('invalid observation');return r;}}];
   }
   observe(kernel,i,budget=2000003){return realize(i,this.bindings(kernel),budget);}
 }
