@@ -1,6 +1,7 @@
 // Compose separately qualified temporal observations, with no partial-result admission.
 import {dependencyIntention,compileDependencies,dependencyBindings} from './dependency-ground.mjs';
 import {realize} from './realization.mjs';
+import {drivenBinding} from './driven-ground.mjs';
 const MASK=0xffffffffn, mod=x=>x&MASK;
 const parity=x=>x.reduce((s,v,i)=>s|(Number(BigInt(v)&1n)<<i),0);
 const identity=()=>Array.from({length:4},(_,i)=>Array.from({length:5},(_,j)=>BigInt(i===j)));
@@ -67,5 +68,5 @@ function evaluate(p,checker=false){if(p.targets.some(t=>t.method==='unresolved')
 export function inspectComposite(i){const p=plan(i);return {prefix:p.prefix,period:p.period,cycles:String(p.cycles),components:p.targets};}
 export function compositeBindings(kernel){let last,compiled;const get=i=>{if(i.domain!=='vlk.dependency-ground.v1')return null;if(i!==last){compiled=plan(i);last=i;}return compiled;};
   const composite={id:'composite-ground',probe:i=>{const p=get(i);if(!p||p.targets.some(t=>t.method==='unresolved'))return null;const width=Math.max(...i.layers.map(l=>l.length));return 2*width*(p.prefix+p.targets.filter(t=>t.method==='contracting').reduce((s,t)=>s+t.t,0))+12800;},run:i=>evaluate(get(i)),admit:(i,value)=>{const p=plan(i,true),expected=evaluate(p,true);if(!Array.isArray(value)||value.length!==expected.length||expected.some((x,j)=>x!==value[j]))throw Error('composite contradiction');return value;}};
-  return [...dependencyBindings(kernel),composite];}
+  return [...dependencyBindings(kernel),composite,drivenBinding()];}
 export function observeComposite(kernel,i,budget=2000003){return realize(i,compositeBindings(kernel),budget);}

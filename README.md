@@ -245,3 +245,7 @@ The atlas now compiles finite transition laws into [tail/cycle coordinates](docs
 ### Heterogeneous composite Grounds
 
 `make dist/vlk.wasm && node tests/composite-ground.mjs` qualifies phase-aligned contraction combined with closed affine subspaces for complete mixed nonlinear register observations. See [composite Ground contract](docs/COMPOSITE_GROUNDS.md).
+
+### Driven computational Grounds
+
+`node tests/driven-ground.mjs` qualifies phase-stable driver specialization and affine continuation of interacting nonlinear register systems. `make test` additionally runs eager source-WASM comparisons. See [driven Ground contract](docs/DRIVEN_GROUNDS.md).
