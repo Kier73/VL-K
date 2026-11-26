@@ -183,3 +183,7 @@ Fork shares mapped pages without copying payload bytes; writes preserve independ
 ## Selectable structural page execution
 
 `make all dist/shell.rv32 dist/filter.rv32` then `dist/vlk-session-objects dist/shell.rv32 demo=dist/demo.rv32 filter=dist/filter.rv32` runs the existing compiled guest shell through the shared page-object backend. See [object runtime contract](docs/OBJECT_RUNTIME.md). The default backend remains unchanged in selection.
+
+## Executable filesystem
+
+The guest shell accepts `install NAME SIZE` followed by exactly SIZE binary bytes, then `run ./NAME ARG` executes the file through the kernel's ELF loader. No catalogue entry is required. See [executable filesystem contract](docs/EXECUTABLE_FILESYSTEM.md). Session files and modes are volatile.

@@ -12,6 +12,17 @@ static int launch(char *name,char *arg,char *data){int fds[2],status;if(data&&SY
     int failed=0;if(data){SYS(57,fds[0],0,0);failed=emit(fds[1],data);SYS(57,fds[1],0,0);}
     return SYS(260,pid,P(&status),0)==pid&&!status&&!failed?0:-1;
 }
+/* Binary-framed install: consume exactly the declared bytes, then grant execution.
+ * On a failed transfer terminate the shell rather than parse payload as commands. */
+static int install(char *name,const char *size){uint32_t n=0;if(!*size)return -1;
+    while(*size){unsigned d=(unsigned char)*size++-'0';if(d>9||n>(262144u-d)/10u)return -1;n=n*10u+d;}
+    if(!n)return -1;
+    int fd=call(56,-100,P(name),0100|0200|1,0666,0);if(fd<0)return -2;
+    uint8_t buf[1024];int ok=1;while(n){uint32_t take=n<sizeof(buf)?n:sizeof(buf);int r=SYS(63,0,P(buf),take);if(r<=0||(uint32_t)r>take||SYS(64,fd,P(buf),r)!=r){ok=0;break;}n-=(uint32_t)r;}
+    if(ok&&SYS(52,fd,0755,0))ok=0;
+    if(SYS(57,fd,0,0))ok=0;
+    if(!ok){SYS(35,-100,P(name),0);return -2;}return 0;
+}
 int main(void){char line[128],*words[6];for(;;){if(emit(1,"guest> "))return 2;unsigned n=0;int overflow=0;
         for(;;){char c;int r=SYS(63,0,P(&c),1);if(r<0)return 3;if(!r&&!n)return 0;if(!r||c=='\n')break;if(c=='\r')continue;if(n<sizeof(line)-1)line[n++]=c;else overflow=1;}
         line[n]=0;if(overflow){emit(1,"invalid\n");continue;}unsigned count=0;char *p=line;
@@ -19,5 +30,6 @@ int main(void){char line[128],*words[6];for(;;){if(emit(1,"guest> "))return 2;un
         if(count==1&&eq(words[0],"quit"))return 0;
         int r=-1;if((count==2||count==3)&&eq(words[0],"run"))r=launch(words[1],count==3?words[2]:0,0);
         else if((count==4||count==5)&&eq(words[0],"send")&&eq(words[2],"|"))r=launch(words[3],count==5?words[4]:0,words[1]);
+        else if(count==3&&eq(words[0],"install")){r=install(words[1],words[2]);if(r==-2){emit(1,"install failed\n");return 4;}}
         else {emit(1,"invalid\n");continue;}emit(1,r?"failed\n":"ok\n");
     }}

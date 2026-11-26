@@ -18,8 +18,9 @@ int32_t fs_open(RVFS *fs,RVFds *t,const char *name,uint32_t flags){
     if(!fs_name(name))return -22;
     if((flags&3)==3||(flags&~(3u|CREATE|EXCL|TRUNC|APPEND|00100000u|CLOEXEC))||((flags&TRUNC)&&!(flags&3)))return -22;
     int i=find(fs,name);if(i>=0&&(flags&CREATE)&&(flags&EXCL))return -17;if(i<0&&!(flags&CREATE))return -2;
+    if(i>=0){uint32_t mode=fs->files[i].mode;if(((flags&3)!=1&&!(mode&0400u))||((flags&3)&&!(mode&0200u)))return -13;}
     unsigned slot=free_slot(t,0),j=free_open(fs);if(slot==FS_FDS)return -24;if(j==FS_OPEN)return -23;
-    if(i<0){for(i=0;i<(int)FS_FILES&&fs->files[i].name[0];i++){}if(i==(int)FS_FILES)return -28;RVFile *f=&fs->files[i];unsigned k=0;do{f->name[k]=name[k];}while(name[k++]);f->size=0;}
+    if(i<0){for(i=0;i<(int)FS_FILES&&fs->files[i].name[0];i++){}if(i==(int)FS_FILES)return -28;RVFile *f=&fs->files[i];unsigned k=0;do{f->name[k]=name[k];}while(name[k++]);f->size=0;f->mode=0666u;}
     if(flags&TRUNC)fs_file_clear(fs,&fs->files[i]);
     fs->opens[j]=(RVOpen){(uint32_t)i,0,flags&(3u|APPEND|00100000u),0,0};attach(fs,t,slot,j,!!(flags&CLOEXEC));return (int32_t)slot;
 }
@@ -61,7 +62,7 @@ int32_t fs_statx(RVFS *fs,RVFds *t,uint32_t dir,const char *name,uint32_t flags,
     else{if(dir!=(uint32_t)-100||!fs_name(name))return -22;i=find(fs,name);if(i<0)return -2;}
     if(!stream)size=fs->files[i].size;
     for(unsigned j=0;j<256;j++)out[j]=0;
-    put(out,4,0x707u);put(out+4,4,4096);put(out+16,4,1);put(out+28,2,stream>=2?0010600u:stream?0020666u:0100666u);put(out+32,4,(uint32_t)i+1+(stream>=2?FS_FILES+3:stream?FS_FILES:0));put(out+40,4,size);put(out+48,4,(size+511)/512);return 0;
+    put(out,4,0x707u);put(out+4,4,4096);put(out+16,4,1);put(out+28,2,stream>=2?0010600u:stream?0020666u:(0100000u|fs->files[i].mode));put(out+32,4,(uint32_t)i+1+(stream>=2?FS_FILES+3:stream?FS_FILES:0));put(out+40,4,size);put(out+48,4,(size+511)/512);return 0;
 }
 
 /* Trusted connection: install read and write endpoints at empty local slots. */
@@ -79,4 +80,19 @@ int fs_ready(RVFS *fs,RVFds *t,uint32_t n,int output,uint32_t count){
     RVPipe *p=&fs->pipes[d->object];
     if(!output)return p->size||!p->writers;
     uint32_t space=FS_PIPE_CAP-p->size;return !p->readers||(count<=FS_PIPE_CAP?space>=count:space!=0);
+}
+
+/* One local owner domain: mode bits are stored, owner bits enforce new opens
+ * and exec. Existing open descriptions keep their access rights. */
+int32_t fs_chmod(RVFS *fs,RVFds *t,uint32_t n,uint32_t mode){
+    RVOpen *d=fd(fs,t,n);if(!d)return -9;if(d->stream||mode&~0777u)return -22;
+    fs->files[d->object].mode=mode;return 0;
+}
+/* Caller owns a separate FS_CAP-byte staging buffer; never a host path. */
+int32_t fs_exec_image(RVFS *fs,const char *name,uint8_t *out){
+    if(!fs_name(name))return -22;
+    int i=find(fs,name);if(i<0)return -2;
+    RVFile *f=&fs->files[i];if(!(f->mode&0100u))return -13;
+    for(unsigned j=0;j<FS_OPEN;j++){RVOpen *d=&fs->opens[j];if(d->refs&&!d->stream&&d->object==(uint32_t)i&&(d->flags&3))return -26;}
+    return fs_file_read(fs,f,0,out,f->size);
 }

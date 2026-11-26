@@ -10,7 +10,7 @@
 #define FS_BLOCK (-4096) /* internal, never an ABI errno */
 typedef struct {uint32_t head,size,readers,writers;uint8_t data[FS_PIPE_CAP];} RVPipe;
 /* A descriptor is a local reference; the open description owns cursor and access. */
-typedef struct {char name[FS_NAME];uint32_t size;RVPage pages[FS_PAGES];} RVFile;
+typedef struct {char name[FS_NAME];uint32_t size,mode;RVPage pages[FS_PAGES];} RVFile;
 typedef struct {uint32_t object,pos,flags,refs;int stream;} RVOpen;
 typedef struct {uint8_t slots[FS_FDS];uint8_t cloexec[FS_FDS];} RVFds;
 typedef struct {RVFile files[FS_FILES];RVOpen opens[FS_OPEN];RVPool pool;RVPipe pipes[FS_PIPES];} RVFS;
@@ -22,6 +22,8 @@ void fs_reset_fds(RVFS *,RVFds *);
 void fs_drop_fds(RVFS *,RVFds *);
 int fs_pipe(RVFS *,RVFds *,RVFds *,uint32_t,uint32_t);
 int fs_ready(RVFS *,RVFds *,uint32_t,int,uint32_t);
+int32_t fs_chmod(RVFS *,RVFds *,uint32_t,uint32_t);
+int32_t fs_exec_image(RVFS *,const char *,uint8_t *);
 int fs_name(const char *);
 int32_t fs_open(RVFS *,RVFds *,const char *,uint32_t);
 int32_t fs_close(RVFS *,RVFds *,uint32_t);

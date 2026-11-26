@@ -14,7 +14,7 @@ uint8_t ram[RV_SIZE];
 #endif
 } RPProcess;
 /* Zero-initialize once, then bind fs. Single-owner kernel; callbacks must not reenter. */
-typedef struct {RVFS *fs;uint32_t last_pid,cursor,blocks,wakes,forks,shared_pages;RPImage images[RP_IMAGES];
+typedef struct {RVFS *fs;uint32_t last_pid,cursor,blocks,wakes,forks,shared_pages;RPImage images[RP_IMAGES];uint8_t exec_image[FS_CAP];
 #ifdef RV_OBJECT_BACKEND
 ROPool pool;uint8_t scratch[RV_SIZE];
 #endif

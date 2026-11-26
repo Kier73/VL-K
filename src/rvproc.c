@@ -46,6 +46,7 @@ static int waiting_ready(RPKernel *k,RPProcess *p){int exists;return child(k,p,p
 static int32_t process_call(RPKernel *k,RPProcess *p,int *replaced){
     RV *v=&p->vm;uint32_t a=v->r[10],b=v->r[11],c=v->r[12];*replaced=0;
     switch(v->r[17]){
+    case 52:return fs_chmod(k->fs,&p->fds,a,b);
     case 172:return (int32_t)p->result.pid;
     case 59:{if(b&~02000000u)return -22;if(!rv_check(v,a,8,RV_W))return -14;unsigned x=0,y;while(x<FS_FDS&&p->fds.slots[x])x++;for(y=x+1;y<FS_FDS&&p->fds.slots[y];y++){}if(y>=FS_FDS)return -24;int r=fs_pipe(k->fs,&p->fds,&p->fds,x,y);if(r)return r;p->fds.cloexec[x]=p->fds.cloexec[y]=(uint8_t)!!b;uint8_t out[8];write32(out,x);write32(out+4,y);rv_write_bytes(v,a,out,8);return 0;}
     case 220:{/* Linux clone's fork-like subset: SIGCHLD, original stack, no extra pointers. */
@@ -62,10 +63,12 @@ static int32_t process_call(RPKernel *k,RPProcess *p,int *replaced){
         k->forks++;k->shared_pages+=shared;q->vm.r[10]=0;q->vm.pc+=4;q->vm.steps=0;
         q->fds=p->fds;for(unsigned j=0;j<FS_FDS;j++)if(q->fds.slots[j])k->fs->opens[q->fds.slots[j]-1].refs++;
         q->parent=p->result.pid;q->limit=p->limit-v->steps-1;q->io=p->io;q->ctx=p->ctx;q->result=(RPResult){++k->last_pid,RP_READY,0,0,0};return (int32_t)q->result.pid;}
-    case 221:{char name[FS_NAME],args[16][256],env[16][256];const char *argv[16],*envp[16];int argc,envc;int r=string(v,a,name,sizeof(name));if(r)return r;
-        const RPImage *image=0;for(unsigned i=0;i<RP_IMAGES;i++)if(k->images[i].name&&same(name,k->images[i].name)){image=&k->images[i];break;}if(!image)return -2;
+    case 221:{char name[FS_NAME+2],args[16][256],env[16][256];const char *argv[16],*envp[16];int argc,envc;int r=string(v,a,name,sizeof(name));if(r)return r;
+        const uint8_t *bytes=0;size_t size=0;int file=name[0]=='.'&&name[1]=='/';
+        if(!file)for(unsigned i=0;i<RP_IMAGES;i++)if(k->images[i].name&&same(name,k->images[i].name)){bytes=k->images[i].bytes;size=k->images[i].size;break;}
+        if(!bytes){int32_t n=fs_exec_image(k->fs,file?name+2:name,k->exec_image);if(n<0)return n;bytes=k->exec_image;size=(size_t)n;}
         if((r=vector(v,b,args,argv,&argc))||(r=vector(v,c,env,envp,&envc)))return r;
-        uint32_t steps=v->steps;if(rv_replace_env(v,image->bytes,image->size,argc,argv,envc,envp))return -8;
+        uint32_t steps=v->steps;if(rv_replace_env(v,bytes,size,argc,argv,envc,envp))return -8;
         v->process_calls=1;v->steps=steps;for(unsigned i=0;i<FS_FDS;i++)if(p->fds.cloexec[i])fs_close(k->fs,&p->fds,i);*replaced=1;return 0;}
     case 260:{if((a==0||(a>0x7fffffffu&&a!=UINT32_MAX))||c>1||v->r[13])return -22;if(b&&!rv_check(v,b,4,RV_W))return -14;
         int exists;RPProcess *q=child(k,p,a,&exists);if(!exists)return -10;if(!q)return c?0:FS_BLOCK;
